@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Helios — Rust ve Tauri ile geliştirilmiş hafif, modern masaüstü müzik istemcisi." />
+    <meta name="color-scheme" content="dark" />
+    <title>Helios</title>
+    <link rel="icon" type="image/png" href="assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script>
+      // Geliştirme sırasında yakalanmamış hataları görünür kıl
+      addEventListener("error", (e) => console.error("[Helios]", e.message, e.filename, e.lineno));
+      addEventListener("unhandledrejection", (e) => console.error("[Helios] Promise:", e.reason));
+    </script>
+    <script type="module" src="js/main.js"></script>
+  </head>
+
+  <body>
+    <div class="ambient" id="ambient" aria-hidden="true"></div>
+
+    <div class="app">
+      <!-- ===== Başlık çubuğu ===== -->
+      <header class="titlebar" data-tauri-drag-region>
+        <div class="brand" data-tauri-drag-region>
+          <img src="assets/logo.png" alt="" draggable="false" />
+          <span>Helios</span>
+        </div>
+        <div class="win-controls">
+          <button class="win-btn" id="tb-minimize" aria-label="Küçült">
+            <svg viewBox="0 0 24 24" class="icon"><path d="M5 12h14" /></svg>
+          </button>
+          <button class="win-btn" id="tb-maximize" aria-label="Büyült">
+            <svg viewBox="0 0 24 24" class="icon"><rect x="5" y="5" width="14" height="14" rx="2" /></svg>
+          </button>
+          <button class="win-btn close" id="tb-close" aria-label="Kapat">
+            <svg viewBox="0 0 24 24" class="icon"><path d="M18 6 6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- ===== Kenar çubuğu ===== -->
+      <aside class="sidebar">
+        <nav class="nav" aria-label="Ana menü">
+          <button class="nav-item" data-view="home">
+            <svg viewBox="0 0 24 24" class="icon"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" /></svg>
+            <span>Keşfet</span>
+          </button>
+          <button class="nav-item" data-view="search">
+            <svg viewBox="0 0 24 24" class="icon"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            <span>Ara</span>
+          </button>
+          <button class="nav-item" data-view="liked">
+            <svg viewBox="0 0 24 24" class="icon"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></svg>
+            <span>Beğenilenler</span>
+            <span class="badge" id="liked-count"></span>
+          </button>
+          <button class="nav-item" data-view="recent">
+            <svg viewBox="0 0 24 24" class="icon"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+            <span>Son Çalınanlar</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-section">
+          <div class="sidebar-head">
+            <span>Çalma Listeleri</span>
+            <button class="icon-btn" id="btn-new-playlist" title="Yeni liste" aria-label="Yeni liste">
+              <svg viewBox="0 0 24 24" class="icon"><path d="M12 5v14M5 12h14" /></svg>
+            </button>
+          </div>
+          <div class="playlist-nav" id="playlist-nav"></div>
+        </div>
+
+        <div class="cache-card">
+          <svg viewBox="0 0 24 24" class="icon"><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v14c0 1.66 3.58 3 8 3s8-1.34 8-3V5" /><path d="M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3" /></svg>
+          <div class="cache-text">
+            <strong id="cache-size">—</strong>
+            <span id="cache-files">Önbellek</span>
+          </div>
+          <button class="icon-btn" id="btn-clear-cache" title="Önbelleği temizle" aria-label="Önbelleği temizle">
+            <svg viewBox="0 0 24 24" class="icon"><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+          </button>
+        </div>
+      </aside>
+
+      <!-- ===== Ana içerik ===== -->
+      <main class="main" id="main-scroll">
+        <div class="topbar">
+          <div class="history">
+            <button class="icon-btn round" id="btn-back" aria-label="Geri" title="Geri (Alt+←)">
+              <svg viewBox="0 0 24 24" class="icon"><path d="m15 18-6-6 6-6" /></svg>
+            </button>
+            <button class="icon-btn round" id="btn-forward" aria-label="İleri" title="İleri (Alt+→)">
+              <svg viewBox="0 0 24 24" class="icon"><path d="m9 18 6-6-6-6" /></svg>
+            </button>
+          </div>
+          <label class="search" role="search">
+            <svg viewBox="0 0 24 24" class="icon"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            <input id="search-input" type="search" placeholder="Şarkı, sanatçı veya albüm ara" autocomplete="off" spellcheck="false" aria-label="Ara" />
+            <kbd>Ctrl K</kbd>
+          </label>
+        </div>
+        <div class="view" id="view"></div>
+      </main>
+
+      <!-- ===== Şimdi çalıyor paneli ===== -->
+      <aside class="np-panel" aria-label="Şimdi çalıyor">
+        <div class="np-head">
+          <span>Şimdi Çalıyor</span>
+          <button class="icon-btn" id="btn-np-close" aria-label="Paneli kapat">
+            <svg viewBox="0 0 24 24" class="icon"><path d="M18 6 6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div class="np-scroll">
+          <div class="np-cover-wrap">
+            <img class="np-cover" id="np-cover" src="assets/logo.png" alt="" draggable="false" />
+          </div>
+          <div class="np-meta">
+            <h2 id="np-title">Bir şarkı seç</h2>
+            <p id="np-artist">Arama yap ya da bir listeden başla</p>
+            <p class="np-album" id="np-album"></p>
+          </div>
+          <div class="np-queue-head">
+            <span>Sıradaki</span>
+            <span class="badge" id="np-queue-count"></span>
+          </div>
+          <div class="np-queue" id="np-queue"></div>
+        </div>
+      </aside>
+
+      <!-- ===== Oynatıcı çubuğu ===== -->
+      <footer class="player">
+        <div class="pl-track">
+          <img class="pl-cover" id="pl-cover" src="assets/logo.png" alt="" draggable="false" />
+          <div class="pl-meta">
+            <div class="pl-title" id="pl-title">Helios</div>
+            <div class="pl-artist" id="pl-artist">Çalmaya hazır</div>
+          </div>
+          <div class="pl-like" id="pl-like"></div>
+          <button class="icon-btn sm" id="pl-more" aria-label="Diğer">
+            <svg viewBox="0 0 24 24" class="icon"><circle fill="currentColor" stroke="none" cx="5" cy="12" r="1.8" /><circle fill="currentColor" stroke="none" cx="12" cy="12" r="1.8" /><circle fill="currentColor" stroke="none" cx="19" cy="12" r="1.8" /></svg>
+          </button>
+        </div>
+
+        <div class="pl-center">
+          <div class="pl-controls">
+            <button class="ctrl mode" id="btn-shuffle" aria-label="Karıştır" title="Karıştır (S)">
+              <svg viewBox="0 0 24 24" class="icon"><path d="M16 3h5v5" /><path d="M4 20 21 3" /><path d="M21 16v5h-5" /><path d="m15 15 6 6" /><path d="M4 4l5 5" /></svg>
+            </button>
+            <button class="ctrl" id="btn-prev" aria-label="Önceki" title="Önceki (Ctrl+←)">
+              <svg viewBox="0 0 24 24" class="icon"><path fill="currentColor" stroke="none" d="M19 5.2v13.6a1 1 0 0 1-1.55.83L8 13.2V18a1 1 0 0 1-2 0V6a1 1 0 0 1 2 0v4.8l9.45-6.43A1 1 0 0 1 19 5.2z" /></svg>
+            </button>
+            <button class="ctrl play" id="btn-play" aria-label="Oynat" title="Oynat / Duraklat (Boşluk)">
+              <svg viewBox="0 0 24 24" class="icon i-play"><path fill="currentColor" stroke="none" d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z" /></svg>
+              <svg viewBox="0 0 24 24" class="icon i-pause"><rect fill="currentColor" stroke="none" x="6" y="4" width="4.5" height="16" rx="1.2" /><rect fill="currentColor" stroke="none" x="13.5" y="4" width="4.5" height="16" rx="1.2" /></svg>
+              <span class="spinner"></span>
+            </button>
+            <button class="ctrl" id="btn-next" aria-label="Sonraki" title="Sonraki (Ctrl+→)">
+              <svg viewBox="0 0 24 24" class="icon"><path fill="currentColor" stroke="none" d="M5 5.2v13.6a1 1 0 0 0 1.55.83L16 13.2V18a1 1 0 0 0 2 0V6a1 1 0 0 0-2 0v4.8L6.55 4.37A1 1 0 0 0 5 5.2z" /></svg>
+            </button>
+            <button class="ctrl mode" id="btn-repeat" aria-label="Tekrarla" title="Tekrarla (R)">
+              <svg viewBox="0 0 24 24" class="icon"><path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" /></svg>
+              <span class="repeat-one">1</span>
+            </button>
+          </div>
+          <div class="pl-seek">
+            <span class="time" id="t-cur">0:00</span>
+            <input type="range" class="range" id="seek" min="0" max="1000" value="0" step="1" aria-label="Konum" />
+            <span class="time" id="t-total">0:00</span>
+          </div>
+        </div>
+
+        <div class="pl-extra">
+          <button class="icon-btn" id="btn-panel" aria-label="Şimdi çalıyor paneli" title="Şimdi çalıyor paneli">
+            <svg viewBox="0 0 24 24" class="icon"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M15 3v18" /></svg>
+          </button>
+          <div class="volume">
+            <button class="icon-btn" id="btn-mute" aria-label="Sesi kapat" title="Sessiz (M)"></button>
+            <input type="range" class="range" id="volume" min="0" max="100" value="35" aria-label="Ses düzeyi" />
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <!-- ===== Diyaloglar ===== -->
+    <dialog class="dialog" id="dlg-prompt">
+      <form method="dialog" class="dialog-body">
+        <h3 class="dlg-title"></h3>
+        <p class="dlg-message"></p>
+        <input type="text" class="dlg-input" maxlength="60" required autocomplete="off" />
+        <div class="dlg-actions">
+          <!-- Enter ile varsayılan gönderim birincil butonu kullansın diye önce o gelir (CSS ile ters sıralanır) -->
+          <button type="submit" class="btn primary dlg-confirm" value="ok">Kaydet</button>
+          <button type="submit" class="btn ghost" value="cancel" formnovalidate>İptal</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="dialog" id="dlg-confirm">
+      <form method="dialog" class="dialog-body">
+        <h3 class="dlg-title"></h3>
+        <p class="dlg-message"></p>
+        <div class="dlg-actions">
+          <button type="submit" class="btn primary dlg-confirm" value="ok">Onayla</button>
+          <button type="submit" class="btn ghost" value="cancel">Vazgeç</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="menu" id="menu" popover role="menu"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

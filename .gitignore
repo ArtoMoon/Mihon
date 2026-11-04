@@ -1,0 +1,25 @@
+# Environment files
+.env
+.env.local
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+
+# Rust / Tauri build artifacts
+target/
+*.exe
+*.pdb
+
+# Audio / Temp cache
+temp_audio/
+downloads/
+*.mp3
+*.m4a
+*.webm
+*.opus
+
+# IDE files
+.vscode/
+.idea/

@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  background-color: #09090b;
+  color: #f4f4f5;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes eq-bounce {
+  0%, 100% {
+    transform: scaleY(0.25);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.eq-bar {
+  transform-origin: bottom;
+  animation: eq-bounce 0.85s ease-in-out infinite;
+}
+.eq-bar-1 {
+  animation-delay: 0s;
+}
+.eq-bar-2 {
+  animation-delay: 0.2s;
+}
+.eq-bar-3 {
+  animation-delay: 0.4s;
+}
+.eq-bar-4 {
+  animation-delay: 0.15s;
+}
+
+/* Custom Range Input (Seekbar & Volume) */
+input[type="range"].helios-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"].helios-slider::-webkit-slider-runnable-track {
+  height: 5px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    var(--slider-color, #f06b3c) var(--progress, 0%),
+    rgba(255, 255, 255, 0.14) var(--progress, 0%)
+  );
+  transition: height 0.15s ease;
+}
+
+input[type="range"].helios-slider:hover::-webkit-slider-runnable-track {
+  height: 6px;
+}
+
+input[type="range"].helios-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 13px;
+  width: 13px;
+  border-radius: 9999px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  margin-top: -4px;
+  opacity: 0;
+  transform: scale(0.75);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+input[type="range"].helios-slider:hover::-webkit-slider-thumb,
+input[type="range"].helios-slider:active::-webkit-slider-thumb {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Next.js dev indicator gizle */
+nextjs-portal,
+[data-nextjs-toast],
+[data-nextjs-dialog-overlay] {
+  display: none !important;
+}
+
