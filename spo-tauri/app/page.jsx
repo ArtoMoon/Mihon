@@ -32,6 +32,11 @@ import {
   FolderPlus,
   HardDrive,
   ChevronRight,
+  ChevronLeft,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
   Minus,
   Square,
   ListPlus,
@@ -298,6 +303,8 @@ export default function HeliosApp() {
   const [updateInfo, setUpdateInfo] = useState(null);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [isInstallingUpdate, setIsInstallingUpdate] = useState(false);
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
   const [toastMessage, setToastMessage] = useState(null);
   const searchInputRef = useRef(null);
 
@@ -514,11 +521,14 @@ export default function HeliosApp() {
     if (isCheckingUpdate || isInstallingUpdate) return;
     if (updateInfo?.has_update && updateInfo?.download_url) {
       setIsInstallingUpdate(true);
-      showToast(`Mihon v${updateInfo.latest_version} indiriliyor ve güncelleniyor...`);
+      showToast(`Mihon v${updateInfo.latest_version} indirme sayfası açılıyor...`);
       try {
-        await tauriInvoke("install_update", { downloadUrl: updateInfo.download_url });
+        await tauriInvoke("install_update", {
+          downloadUrl: updateInfo.release_url || updateInfo.download_url,
+        });
       } catch (err) {
         showToast(`Güncelleme hatası: ${err?.message || err}`, true);
+      } finally {
         setIsInstallingUpdate(false);
       }
       return;
@@ -1145,7 +1155,24 @@ export default function HeliosApp() {
         data-tauri-drag-region
         className="relative z-30 h-11 px-4 flex items-center justify-between border-b border-white/[0.06] bg-zinc-950/70 backdrop-blur-xl shrink-0"
       >
-        <div data-tauri-drag-region className="flex items-center gap-2.5">
+        <div data-tauri-drag-region className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsLeftSidebarOpen((v) => !v)}
+            className={`w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${
+              isLeftSidebarOpen
+                ? "bg-white/[0.06] text-zinc-200 border-white/10 hover:bg-white/10"
+                : "bg-[#F06B3C]/20 text-[#F06B3C] border-[#F06B3C]/40 hover:bg-[#F06B3C]/30"
+            }`}
+            title={isLeftSidebarOpen ? "Sol Menüyü Kapat" : "Sol Menüyü Aç"}
+          >
+            {isLeftSidebarOpen ? (
+              <PanelLeftClose size={14} />
+            ) : (
+              <PanelLeftOpen size={14} />
+            )}
+          </button>
+
           <div className="w-7 h-7 rounded-lg overflow-hidden bg-zinc-900 border border-white/15 flex items-center justify-center shadow-lg shadow-orange-500/20">
             <img
               src="/mihon-logo.jpg"
@@ -1256,6 +1283,23 @@ export default function HeliosApp() {
         {/* Pencere Kontrolleri */}
         <div className="flex items-center gap-1">
           <button
+            type="button"
+            onClick={() => setIsRightSidebarOpen((v) => !v)}
+            className={`w-8 h-7 mr-1 rounded-lg flex items-center justify-center border transition-all ${
+              isRightSidebarOpen
+                ? "bg-white/[0.06] text-zinc-200 border-white/10 hover:bg-white/10"
+                : "bg-[#F06B3C]/20 text-[#F06B3C] border-[#F06B3C]/40 hover:bg-[#F06B3C]/30"
+            }`}
+            title={isRightSidebarOpen ? "Sağ Paneli Kapat" : "Sağ Paneli Aç"}
+          >
+            {isRightSidebarOpen ? (
+              <PanelRightClose size={14} />
+            ) : (
+              <PanelRightOpen size={14} />
+            )}
+          </button>
+
+          <button
             onClick={() => tauriInvoke("minimize_window").catch(() => {})}
             className="w-8 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
             title="Küçült"
@@ -1281,11 +1325,25 @@ export default function HeliosApp() {
 
       {/* ===== ORTA ALAN (Sol Minimal Menü + Ana İçerik + Sağ Kuyruk) ===== */}
       <div className="relative z-10 flex-1 flex min-h-0 gap-2.5 p-2.5 pb-0">
-        {/* SOL KENAR ÇUBUĞU (Sade Navigasyon & Kullanıcının Kendi Listeleri) */}
-        <aside className="w-60 shrink-0 rounded-2xl bg-zinc-900/60 border border-white/[0.07] backdrop-blur-2xl flex flex-col justify-between p-3">
-          <div className="space-y-5 min-h-0 flex-1 flex flex-col">
-            {/* Ana Menü */}
-            <nav className="space-y-1">
+        {/* SOL KENAR ÇUBUĞU (Açılır / Kapanır) */}
+        {isLeftSidebarOpen ? (
+          <aside className="w-60 shrink-0 rounded-2xl bg-zinc-900/60 border border-white/[0.07] backdrop-blur-2xl flex flex-col justify-between p-3 transition-all">
+            <div className="space-y-4 min-h-0 flex-1 flex flex-col">
+              <div className="flex items-center justify-between px-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                  MENÜ & KÜTÜPHANE
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsLeftSidebarOpen(false)}
+                  className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+                  title="Sol Paneli Gizle"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+              </div>
+              {/* Ana Menü */}
+              <nav className="space-y-1">
               <button
                 onClick={() => setActiveView("home")}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
@@ -1495,6 +1553,16 @@ export default function HeliosApp() {
             )}
           </div>
         </aside>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsLeftSidebarOpen(true)}
+            className="w-7 shrink-0 rounded-2xl bg-zinc-900/60 hover:bg-zinc-800/80 border border-white/[0.07] hover:border-[#F06B3C]/40 flex flex-col items-center justify-center gap-2 text-zinc-400 hover:text-[#F06B3C] transition-all group"
+            title="Sol Menüyü Aç"
+          >
+            <ChevronRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
+          </button>
+        )}
 
         {/* ===== ANA İÇERİK PANELİ ===== */}
         <main
@@ -2035,19 +2103,30 @@ export default function HeliosApp() {
           )}
         </main>
 
-        {/* ===== SAĞ PANEL: ŞİMDİ ÇALIYOR & SIRADAKİ KUYRUK ===== */}
-        <aside className="hidden xl:flex w-72 shrink-0 rounded-2xl bg-zinc-900/60 border border-white/[0.07] backdrop-blur-2xl p-4 flex-col justify-between">
-          <div className="space-y-4 min-h-0 flex-1 flex flex-col">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
-                Şimdi Çalıyor
-              </span>
-              {playbackRate !== 1 && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#F06B3C]/20 text-[#F06B3C]">
-                  {playbackRate}x HIZ
+        {/* ===== SAĞ PANEL: ŞİMDİ ÇALIYOR & SIRADAKİ KUYRUK (Açılır / Kapanır) ===== */}
+        {isRightSidebarOpen ? (
+          <aside className="hidden lg:flex w-72 shrink-0 rounded-2xl bg-zinc-900/60 border border-white/[0.07] backdrop-blur-2xl p-4 flex-col justify-between transition-all">
+            <div className="space-y-4 min-h-0 flex-1 flex flex-col">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+                  Şimdi Çalıyor
                 </span>
-              )}
-            </div>
+                <div className="flex items-center gap-1.5">
+                  {playbackRate !== 1 && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#F06B3C]/20 text-[#F06B3C]">
+                      {playbackRate}x HIZ
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsRightSidebarOpen(false)}
+                    className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+                    title="Sağ Paneli Gizle"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
 
             {/* Büyük Kapak Kartı */}
             <div className="relative aspect-square rounded-2xl overflow-hidden bg-zinc-800/60 border border-white/10 shadow-2xl">
@@ -2161,6 +2240,16 @@ export default function HeliosApp() {
             </div>
           </div>
         </aside>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsRightSidebarOpen(true)}
+            className="hidden lg:flex w-7 shrink-0 rounded-2xl bg-zinc-900/60 hover:bg-zinc-800/80 border border-white/[0.07] hover:border-[#F06B3C]/40 flex-col items-center justify-center gap-2 text-zinc-400 hover:text-[#F06B3C] transition-all group"
+            title="Sağ Paneli Aç"
+          >
+            <ChevronLeft size={15} className="group-hover:-translate-x-0.5 transition-transform" />
+          </button>
+        )}
       </div>
 
       {/* ===== ALT OYNATICI ÇUBUĞU (İleri-Geri Sarma + 2x Hız + Listeye Atma) ===== */}
