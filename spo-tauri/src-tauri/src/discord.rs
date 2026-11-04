@@ -123,12 +123,7 @@ pub fn set_presence(
     };
 
     let large_text = "Mihon".to_string();
-
-    let watch_url = if id.len() == 11 && !id.starts_with("sp:") {
-        format!("https://music.youtube.com/watch?v={id}")
-    } else {
-        "https://music.youtube.com".to_string()
-    };
+    let github_url = "https://github.com/ArtoMoon/Mihon";
 
     let mut activity = json!({
         "name": "Mihon",
@@ -141,8 +136,8 @@ pub fn set_presence(
         },
         "buttons": [
             {
-                "label": "Mihon ile Dinle",
-                "url": watch_url
+                "label": "Mihon • GitHub",
+                "url": github_url
             }
         ]
     });

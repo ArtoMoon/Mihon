@@ -1,56 +1,79 @@
-# 🎵 Spo - Ultra Hafif Müzik İstemcisi (Lightweight Client)
+<div align="center">
+  <img src="spo-tauri/public/mihon-logo.jpg" alt="Mihon Logo" width="128" height="128" style="border-radius: 28px;" />
+  <h1>Mihon</h1>
+  <p><strong>Ultra-fast, modern desktop music player built with Next.js 15, Tailwind CSS, and Tauri v2 (Rust).</strong></p>
 
-Spotify'a alternatif, **API anahtarına veya kayıt olmaya ihtiyaç duymayan**, ultra düşük bellek (RAM) tüketen, modern ve hızlı masaüstü müzik istemcisi.
-
-Electron / Chromium tabanlı hantal istemcilerin aksine (genelde 400MB - 1GB RAM harcarlar), **Spo** hafif Python mimarisi (`CustomTkinter` + `ytmusicapi` + Windows Media Engine) sayesinde yalnızca ~**40-60 MB RAM** kullanarak anında çalışır.
-
----
-
-## 🚀 Özellikler
-
-- 🟢 **Sıfır API Anahtarı & Ücretsiz:** Spotify Developer hesabı veya Client ID/Secret gerekmez! Milyonlarca şarkıya anında erişim.
-- 🟢 **Ultra Düşük RAM Kullanımı:** Electron yerine hafif GUI kütüphaneleri (~45MB RAM).
-- 🎨 **Modern Minimalist Koyu Tema:** Spotify estetiğine uygun neon yeşil vurgular, yuvarlatılmış köşeler ve pürüzsüz kartlar.
-- 🔍 **Geniş Müzik Kataloğu:** Şarkı, sanatçı, albüm ve popüler çalma listeleri.
-- ⚡ **Doğrudan Ses Akışı:** Parçalar indirme beklemeden doğrudan Windows Media motoru ile akış olarak çalınır.
-- 🎛️ **Gelişmiş Oynatıcı Kontrolleri:** Oynat/Duraklat (Boşluk tuşu desteği), İleri/Geri, İlerleme Çubuğu, Gerçek Zamanlı Süre Sayacı ve Ses Ayarı.
+  <p>
+    <a href="https://github.com/ArtoMoon/Mihon/releases/latest">
+      <img src="https://img.shields.io/github/v/release/ArtoMoon/Mihon?style=for-the-badge&color=F06B3C&label=Latest%20Release" alt="Latest Release" />
+    </a>
+    <img src="https://img.shields.io/badge/Platform-Windows%20x64-0078D6?style=for-the-badge&logo=windows" alt="Platform Windows" />
+    <img src="https://img.shields.io/badge/Tauri-v2.0-FFC131?style=for-the-badge&logo=tauri&logoColor=black" alt="Tauri v2" />
+    <img src="https://img.shields.io/badge/Next.js-15-000000?style=for-the-badge&logo=next.js" alt="Next.js 15" />
+  </p>
+</div>
 
 ---
 
-## 🛠️ Kurulum ve Çalıştırma
+## ✨ Features
 
-### 1. Bağımlılıkları Yükleyin
+- **⚡ Zero-Latency Audio Caching & Playback**: Pre-fetches and caches high-bitrate audio streams locally for instant, gapless playback and offline replay.
+- **🎧 Spotify Profile & Playlist Import**: Import any public Spotify playlist (`open.spotify.com/playlist/...`) or an entire user profile (`open.spotify.com/user/...`) with a single click—no API keys required.
+- **🔮 Acoustic Similar-Genre Radio (AI Vibe Engine)**: Generates a continuous radio stream of similar songs using YouTube Music's `RDAMVM` acoustic graph combined with Maximal Marginal Relevance (MMR) artist diversity scoring.
+- **💬 Native Discord Rich Presence**: Displays the currently playing track, artist, high-resolution album cover, live elapsed/remaining timestamps, and a direct GitHub link on your Discord profile via Windows Named Pipe IPC (`\\.\pipe\discord-ipc-*`).
+- **🔄 Built-in GitHub Auto-Updater**: Checks [`ArtoMoon/Mihon`](https://github.com/ArtoMoon/Mihon) for new releases and updates the binary in-place with one click.
+- **💾 Persistent Local Library**: Automatically persists custom playlists, liked tracks, and listening history to disk (`library.json`).
+- **🎛️ Variable Playback Speed & Logarithmic Volume Curve**: Supports `0.75x`, `1x`, `1.25x`, `1.5x`, and `2x` playback speeds with perceptual loudness normalization.
 
+---
+
+## 📦 Download & Installation
+
+Download the latest version from the [**GitHub Releases**](https://github.com/ArtoMoon/Mihon/releases/latest) page:
+
+| Package | Description |
+| :--- | :--- |
+| **`Mihon_2.0.0_x64-setup.exe`** | Standard Windows NSIS Setup Installer (creates desktop & Start Menu shortcuts) |
+| **`Mihon.exe`** | Standalone Portable Executable (no installation required) |
+
+---
+
+## 🛠️ Tech Stack
+
+- **Frontend**: Next.js 15 (App Router, Static Export), React 19, Tailwind CSS, Lucide Icons
+- **Backend / Native Core**: Rust, Tauri v2, Tokio, Reqwest
+- **Audio Engine**: Native Rust stream resolver + local disk cache (`%LOCALAPPDATA%\com.helios.player`)
+- **Discord Integration**: Zero-dependency Rust IPC Named Pipe client (`src-tauri/src/discord.rs`)
+
+---
+
+## 🚀 Development & Building from Source
+
+### Prerequisites
+- [Node.js](https://nodejs.org/) (v18+)
+- [Rust & Cargo](https://rustup.rs/) (stable)
+- Windows 10/11 with WebView2 runtime
+
+### 1. Install Dependencies
 ```bash
-pip install -r requirements.txt
+cd spo-tauri
+npm install
 ```
 
-### 2. Uygulamayı Başlatın
-
-Hiçbir ayar veya API anahtarı girmeden doğrudan çalıştırabilirsiniz:
-
+### 2. Run in Development Mode
 ```bash
-python main.py
+npm run dev
+```
+
+### 3. Build Standalone `Mihon.exe` & NSIS Setup Installer
+```bash
+cd spo-tauri
+npm run build
+npx tauri build --bundles nsis
 ```
 
 ---
 
-## 📂 Proje Yapısı
+## 📄 License
 
-```
-spo/
-├── requirements.txt      # Gerekli bağımlılıklar (customtkinter, ytmusicapi, yt-dlp, comtypes)
-├── main.py               # Uygulama başlangıç noktası
-├── README.md             # Proje dokümantasyonu
-└── src/
-    ├── config.py         # Uygulama ayar yöneticisi
-    ├── services/
-    │   ├── spotify_api.py   # API-Free YouTube Music meta veri arama servisi
-    │   └── audio_player.py  # Doğrudan ses akışı motoru (Windows Media Engine)
-    └── ui/
-        ├── theme.py         # Modern koyu tema renk paleti ve fontlar
-        ├── sidebar.py       # Sol çalma listesi & navigasyon paneli
-        ├── search_view.py   # Arama çubuğu ve şarkı tablosu
-        ├── player_bar.py    # Alt minimalist oynatıcı çubuğu
-        └── app.py           # Ana pencere ve olay yöneticisi
-1```
+Distributed under the MIT License. See [`https://github.com/ArtoMoon/Mihon`](https://github.com/ArtoMoon/Mihon) for more information.
