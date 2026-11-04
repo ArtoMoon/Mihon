@@ -498,6 +498,196 @@ async fn check_for_updates(repo: Option<String>) -> Result<UpdateInfo, String> {
     })
 }
 
+#[derive(Serialize, Clone)]
+struct LyricsResult {
+    synced_lyrics: String,
+    plain_lyrics: String,
+    track_name: String,
+    artist_name: String,
+    source: String,
+}
+
+fn clean_lyrics_term(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut depth = 0usize;
+    for ch in s.chars() {
+        match ch {
+            '(' | '[' | '{' => depth += 1,
+            ')' | ']' | '}' => depth = depth.saturating_sub(1),
+            _ if depth == 0 => out.push(ch),
+            _ => {}
+        }
+    }
+    let lower = out.to_lowercase();
+    let mut cleaned = out;
+    for noise in [
+        "official video",
+        "official audio",
+        "official music video",
+        "lyric video",
+        "lyrics",
+        "visualizer",
+        "resmi video",
+        "klip",
+        "prod.",
+        "feat.",
+        "ft.",
+    ] {
+        if let Some(pos) = lower.find(noise) {
+            cleaned = cleaned.chars().take(pos).collect();
+            break;
+        }
+    }
+    cleaned
+        .replace('"', " ")
+        .replace('|', " ")
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+#[tauri::command]
+async fn fetch_lyrics(
+    title: String,
+    artist: String,
+    duration_sec: Option<u32>,
+) -> Result<LyricsResult, String> {
+    let client = reqwest::Client::builder()
+        .user_agent("Mihon-Desktop/2.1.0 (https://github.com/ArtoMoon/Mihon)")
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let raw_title = title.trim();
+    let raw_artist = artist
+        .split([',', '&', '×', ';', '/'])
+        .next()
+        .unwrap_or(&artist)
+        .trim();
+
+    let clean_title = clean_lyrics_term(raw_title);
+    let clean_artist = clean_lyrics_term(raw_artist);
+
+    // Eğer başlıkta "Sanatçı - Şarkı" formatı varsa parçala
+    let (parsed_artist, parsed_title) = if let Some((a, t)) = clean_title.split_once(" - ") {
+        (a.trim().to_string(), t.trim().to_string())
+    } else if let Some((a, t)) = clean_title.split_once(" – ") {
+        (a.trim().to_string(), t.trim().to_string())
+    } else {
+        (clean_artist.clone(), clean_title.clone())
+    };
+
+    let queries = vec![
+        format!("{parsed_artist} {parsed_title}"),
+        format!("{clean_artist} {clean_title}"),
+        parsed_title.clone(),
+        raw_title.to_string(),
+    ];
+
+    let target_dur = duration_sec.unwrap_or(0) as i64;
+
+    for q in queries {
+        let q_trim = q.trim();
+        if q_trim.is_empty() {
+            continue;
+        }
+        let resp = client
+            .get("https://lrclib.net/api/search")
+            .query(&[("q", q_trim)])
+            .send()
+            .await;
+
+        if let Ok(r) = resp {
+            if r.status().is_success() {
+                if let Ok(items) = r.json::<Vec<serde_json::Value>>().await {
+                    let mut best: Option<(i64, LyricsResult)> = None;
+
+                    for item in items {
+                        let synced = item
+                            .get("syncedLyrics")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("")
+                            .trim()
+                            .to_string();
+                        let plain = item
+                            .get("plainLyrics")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("")
+                            .trim()
+                            .to_string();
+
+                        if synced.is_empty() && plain.is_empty() {
+                            continue;
+                        }
+
+                        let t_name = item
+                            .get("trackName")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or(raw_title)
+                            .to_string();
+                        let a_name = item
+                            .get("artistName")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or(raw_artist)
+                            .to_string();
+                        let item_dur = item
+                            .get("duration")
+                            .and_then(|v| v.as_f64())
+                            .unwrap_or(0.0) as i64;
+
+                        let mut score: i64 = 0;
+                        if !synced.is_empty() {
+                            score += 100;
+                        }
+                        let a_low = a_name.to_lowercase();
+                        if !parsed_artist.is_empty()
+                            && (a_low.contains(&parsed_artist.to_lowercase())
+                                || parsed_artist.to_lowercase().contains(&a_low))
+                        {
+                            score += 50;
+                        }
+                        let t_low = t_name.to_lowercase();
+                        if !parsed_title.is_empty()
+                            && (t_low.contains(&parsed_title.to_lowercase())
+                                || parsed_title.to_lowercase().contains(&t_low))
+                        {
+                            score += 40;
+                        }
+                        if target_dur > 0 && item_dur > 0 {
+                            let diff = (target_dur - item_dur).abs();
+                            if diff <= 4 {
+                                score += 35;
+                            } else if diff <= 12 {
+                                score += 15;
+                            } else if diff > 45 {
+                                score -= 25;
+                            }
+                        }
+
+                        let candidate = LyricsResult {
+                            synced_lyrics: synced,
+                            plain_lyrics: plain,
+                            track_name: t_name,
+                            artist_name: a_name,
+                            source: "LRCLIB".to_string(),
+                        };
+
+                        if best.as_ref().map(|(s, _)| score > *s).unwrap_or(true) {
+                            best = Some((score, candidate));
+                        }
+                    }
+
+                    if let Some((_, winner)) = best {
+                        return Ok(winner);
+                    }
+                }
+            }
+        }
+    }
+
+    Err("Bu parça için şarkı sözü bulunamadı.".to_string())
+}
+
 #[tauri::command]
 async fn install_update(app: AppHandle, download_url: String) -> Result<(), String> {
     use tauri_plugin_opener::OpenerExt;
@@ -553,7 +743,8 @@ pub fn run() {
             load_library,
             save_library,
             check_for_updates,
-            install_update
+            install_update,
+            fetch_lyrics
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

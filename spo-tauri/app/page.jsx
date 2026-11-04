@@ -42,6 +42,9 @@ import {
   ListPlus,
   Loader2,
   SlidersHorizontal,
+  MicVocal,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 
 // ============================================================================
@@ -162,6 +165,34 @@ function formatBytes(bytes) {
   if (!bytes || bytes <= 0) return "0 MB";
   const mb = bytes / (1024 * 1024);
   return mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb.toFixed(0)} MB`;
+}
+
+function parseLrcLyrics(lrcText) {
+  if (!lrcText || typeof lrcText !== "string") return [];
+  const lines = lrcText.split(/\r?\n/);
+  const parsed = [];
+  const tagRegex = /\[(\d{1,3}):(\d{2})(?:[.:](\d{1,3}))?\]/g;
+
+  for (const rawLine of lines) {
+    const timestamps = [];
+    let match;
+    tagRegex.lastIndex = 0;
+    while ((match = tagRegex.exec(rawLine)) !== null) {
+      const mins = parseInt(match[1], 10);
+      const secs = parseInt(match[2], 10);
+      const fracStr = match[3] || "0";
+      const frac =
+        parseInt(fracStr, 10) / Math.pow(10, fracStr.length);
+      timestamps.push(mins * 60 + secs + frac);
+    }
+    const text = rawLine.replace(tagRegex, "").trim();
+    if (timestamps.length > 0 && text.length > 0) {
+      for (const time of timestamps) {
+        parsed.push({ time, text });
+      }
+    }
+  }
+  return parsed.sort((a, b) => a.time - b.time);
 }
 
 function getTrackCover(track) {
@@ -305,6 +336,17 @@ export default function HeliosApp() {
   const [isInstallingUpdate, setIsInstallingUpdate] = useState(false);
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
+  const [rightPanelTab, setRightPanelTab] = useState("queue"); // "queue" | "lyrics"
+  const [lyricsData, setLyricsData] = useState({
+    synced: [],
+    plain: "",
+    loading: false,
+    error: null,
+    trackId: null,
+  });
+  const lyricsCacheRef = useRef(new Map());
+  const rightLyricsContainerRef = useRef(null);
+  const mainLyricsContainerRef = useRef(null);
   const [toastMessage, setToastMessage] = useState(null);
   const searchInputRef = useRef(null);
 
@@ -1135,6 +1177,109 @@ export default function HeliosApp() {
       ? Math.min(100, Math.max(0, (displayedTime / effectiveDuration) * 100))
       : 0;
 
+  // Şarkı değiştiğinde LRCLIB üzerinden senkronize veya düz sözleri getir
+  useEffect(() => {
+    if (!currentTrack) {
+      setLyricsData({
+        synced: [],
+        plain: "",
+        loading: false,
+        error: null,
+        trackId: null,
+      });
+      return;
+    }
+
+    const trackId = currentTrack.id;
+    const cached = lyricsCacheRef.current.get(trackId);
+    if (cached) {
+      setLyricsData({ ...cached, loading: false, trackId });
+      return;
+    }
+
+    let cancelled = false;
+    setLyricsData({
+      synced: [],
+      plain: "",
+      loading: true,
+      error: null,
+      trackId,
+    });
+
+    (async () => {
+      try {
+        const res = await tauriInvoke("fetch_lyrics", {
+          title: currentTrack.title || "",
+          artist: currentTrack.artist || "",
+          durationSec: Number(currentTrack.duration_sec) || 0,
+        });
+        if (cancelled) return;
+        const syncedArr = parseLrcLyrics(res?.synced_lyrics || "");
+        const plainText = (res?.plain_lyrics || "").trim();
+        const entry = {
+          synced: syncedArr,
+          plain: plainText,
+          error:
+            syncedArr.length === 0 && !plainText
+              ? "Bu şarkı için söz bulunamadı."
+              : null,
+        };
+        lyricsCacheRef.current.set(trackId, entry);
+        setLyricsData({ ...entry, loading: false, trackId });
+      } catch (err) {
+        if (cancelled) return;
+        const entry = {
+          synced: [],
+          plain: "",
+          error: typeof err === "string" ? err : "Bu şarkı için söz bulunamadı.",
+        };
+        lyricsCacheRef.current.set(trackId, entry);
+        setLyricsData({ ...entry, loading: false, trackId });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentTrack?.id]);
+
+  // O an çalan senkronize şarkı sözü satırı indeksi
+  const activeLyricIndex = useMemo(() => {
+    if (!lyricsData.synced || lyricsData.synced.length === 0) return -1;
+    let idx = -1;
+    for (let i = 0; i < lyricsData.synced.length; i++) {
+      if (currentTime + 0.25 >= lyricsData.synced[i].time) {
+        idx = i;
+      } else {
+        break;
+      }
+    }
+    return idx;
+  }, [lyricsData.synced, currentTime]);
+
+  // Aktif şarkı sözü satırı değiştikçe yumuşakça ortala
+  useEffect(() => {
+    if (activeLyricIndex < 0) return;
+    const scrollContainer = (container) => {
+      if (!container) return;
+      const activeEl = container.querySelector(
+        `[data-lyric-idx="${activeLyricIndex}"]`
+      );
+      if (activeEl) {
+        activeEl.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }
+    };
+    if (rightPanelTab === "lyrics" && isRightSidebarOpen) {
+      scrollContainer(rightLyricsContainerRef.current);
+    }
+    if (activeView === "lyrics") {
+      scrollContainer(mainLyricsContainerRef.current);
+    }
+  }, [activeLyricIndex, rightPanelTab, isRightSidebarOpen, activeView]);
+
   return (
     <div className="relative h-screen w-screen overflow-hidden flex flex-col bg-[#09090B] text-zinc-100 select-none">
       {/* Dinamik Arka Plan Ortam Işığı */}
@@ -1426,6 +1571,25 @@ export default function HeliosApp() {
                 <span className="px-2 py-0.5 text-[10px] rounded-full bg-black/25">
                   {customPlaylists.length}
                 </span>
+              </button>
+
+              <button
+                onClick={() => setActiveView("lyrics")}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                  activeView === "lyrics"
+                    ? "bg-[#F06B3C] text-white shadow-lg shadow-orange-500/20"
+                    : "text-zinc-400 hover:text-white hover:bg-white/[0.05]"
+                }`}
+              >
+                <span className="flex items-center gap-3">
+                  <MicVocal size={17} />
+                  <span>Şarkı Sözleri</span>
+                </span>
+                {lyricsData.synced.length > 0 && (
+                  <span className="px-1.5 py-0.5 text-[9px] font-extrabold rounded-full bg-emerald-500/20 text-emerald-300">
+                    CANLI
+                  </span>
+                )}
               </button>
             </nav>
 
@@ -1860,8 +2024,125 @@ export default function HeliosApp() {
             </section>
           )}
 
+          {/* TAM EKRAN SENKRONİZE ŞARKI SÖZLERİ GÖRÜNÜMÜ */}
+          {activeView === "lyrics" && (
+            <section className="relative rounded-3xl overflow-hidden border border-white/10 bg-gradient-to-br from-zinc-900/90 via-zinc-950/95 to-black p-6 md:p-8 min-h-[520px] flex flex-col">
+              {currentTrack && (
+                <div
+                  className="pointer-events-none absolute inset-0 opacity-25 blur-3xl scale-125"
+                  style={{
+                    backgroundImage: `url(${getTrackCover(currentTrack)})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }}
+                />
+              )}
+              <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-white/10">
+                <div className="flex items-center gap-4 min-w-0">
+                  <TrackArtwork
+                    track={currentTrack}
+                    className="w-16 h-16 rounded-2xl shadow-2xl"
+                    iconSize={28}
+                  />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#F06B3C]/20 text-[#F06B3C] border border-[#F06B3C]/30">
+                        {lyricsData.synced.length > 0
+                          ? "Canlı Senkronize Sözler"
+                          : "Şarkı Sözleri"}
+                      </span>
+                      {lyricsData.synced.length > 0 && (
+                        <span className="text-[11px] text-zinc-400">
+                          Satıra tıklayarak o saniyeye sarabilirsin
+                        </span>
+                      )}
+                    </div>
+                    <h1 className="text-2xl font-black text-white truncate mt-1">
+                      {currentTrack ? currentTrack.title : "Şarkı Seçilmedi"}
+                    </h1>
+                    <p className="text-sm text-zinc-400 truncate">
+                      {currentTrack
+                        ? currentTrack.artist
+                        : "Sözlerini görmek için bir şarkı başlat"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveView("home")}
+                  className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/15 text-xs font-bold text-white border border-white/10 transition-all"
+                >
+                  Listeye Dön
+                </button>
+              </div>
+
+              <div
+                ref={mainLyricsContainerRef}
+                className="relative z-10 flex-1 overflow-y-auto py-8 px-2 md:px-8 space-y-4 max-h-[62vh]"
+              >
+                {!currentTrack ? (
+                  <div className="py-20 text-center text-zinc-400">
+                    <MicVocal size={44} className="mx-auto text-[#F06B3C] mb-3 opacity-80" />
+                    <p className="text-base font-bold text-white">
+                      Henüz bir şarkı çalmıyor
+                    </p>
+                    <p className="text-xs text-zinc-400 mt-1">
+                      Herhangi bir şarkıyı başlattığında sözleri burada senkronize akacak.
+                    </p>
+                  </div>
+                ) : lyricsData.loading ? (
+                  <div className="py-20 text-center text-zinc-300 flex flex-col items-center gap-3">
+                    <Loader2 size={32} className="animate-spin text-[#F06B3C]" />
+                    <p className="text-sm font-semibold">
+                      Şarkı sözleri getiriliyor...
+                    </p>
+                  </div>
+                ) : lyricsData.synced.length > 0 ? (
+                  lyricsData.synced.map((line, i) => {
+                    const isActive = i === activeLyricIndex;
+                    const isPassed = i < activeLyricIndex;
+                    return (
+                      <div
+                        key={`${line.time}_${i}`}
+                        data-lyric-idx={i}
+                        onClick={() => seekToSeconds(line.time)}
+                        className={`cursor-pointer rounded-2xl px-4 py-2.5 transition-all duration-300 ${
+                          isActive
+                            ? "bg-white/[0.08] text-white text-xl md:text-2xl font-black scale-[1.01] shadow-lg border border-[#F06B3C]/40"
+                            : isPassed
+                            ? "text-zinc-500 hover:text-zinc-200 text-base md:text-lg font-semibold"
+                            : "text-zinc-300/80 hover:text-white text-base md:text-lg font-semibold"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-4">
+                          <span>{line.text}</span>
+                          <span className="text-[11px] font-mono text-zinc-500 shrink-0">
+                            {formatTime(line.time)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : lyricsData.plain ? (
+                  <div className="whitespace-pre-line text-base md:text-lg leading-relaxed font-semibold text-zinc-200 max-w-2xl mx-auto">
+                    {lyricsData.plain}
+                  </div>
+                ) : (
+                  <div className="py-20 text-center text-zinc-400">
+                    <MicVocal size={40} className="mx-auto text-zinc-500 mb-3" />
+                    <p className="text-base font-bold text-zinc-200">
+                      {lyricsData.error || "Bu parça için şarkı sözü bulunamadı."}
+                    </p>
+                    <p className="text-xs text-zinc-500 mt-1">
+                      Farklı bir versiyon veya başka bir şarkı deneyebilirsin.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
           {/* ŞARKI LİSTESİ TABLOSU (Home, Liked, Recent, Playlist Detail) */}
-          {activeView !== "playlists" && (
+          {activeView !== "playlists" && activeView !== "lyrics" && (
             <section className="space-y-3">
               {/* Liste Üst Başlığı ve Aksiyonlar */}
               <div className="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-white/[0.07]">
@@ -2209,34 +2490,124 @@ export default function HeliosApp() {
               </div>
             )}
 
-            {/* Sıradaki Parçalar */}
+            {/* Sıradaki Parçalar / Şarkı Sözleri Sekmeli Alan */}
             <div className="pt-3 border-t border-white/[0.07] flex-1 flex flex-col min-h-0">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2">
-                SIRADAKİ PARÇALAR
-              </span>
-              <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
-                {queue.slice(queueIndex + 1, queueIndex + 12).map((item, i) => (
-                  <div
-                    key={`${item.id}_${i}`}
-                    onClick={() => playTrackAtIndex(queue, queueIndex + 1 + i)}
-                    className="flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-white/[0.06] cursor-pointer transition-colors"
+              <div className="flex items-center justify-between gap-1 mb-2">
+                <div className="flex items-center gap-1 p-0.5 rounded-xl bg-black/40 border border-white/[0.07]">
+                  <button
+                    type="button"
+                    onClick={() => setRightPanelTab("queue")}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all ${
+                      rightPanelTab === "queue"
+                        ? "bg-[#F06B3C] text-white shadow"
+                        : "text-zinc-400 hover:text-white"
+                    }`}
                   >
-                    <TrackArtwork
-                      track={item}
-                      className="w-8 h-8 rounded-lg"
-                      iconSize={13}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-zinc-200 truncate">
-                        {item.title}
-                      </p>
-                      <p className="text-[10px] text-zinc-500 truncate">
-                        {item.artist}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                    Sıradaki
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRightPanelTab("lyrics")}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all ${
+                      rightPanelTab === "lyrics"
+                        ? "bg-[#F06B3C] text-white shadow"
+                        : "text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    <MicVocal size={11} />
+                    <span>Sözler</span>
+                  </button>
+                </div>
+
+                {rightPanelTab === "lyrics" && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveView(activeView === "lyrics" ? "home" : "lyrics")
+                    }
+                    className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+                    title={
+                      activeView === "lyrics"
+                        ? "Tam Ekran Sözleri Kapat"
+                        : "Sözleri Tam Ekran Aç"
+                    }
+                  >
+                    {activeView === "lyrics" ? (
+                      <Minimize2 size={13} />
+                    ) : (
+                      <Maximize2 size={13} />
+                    )}
+                  </button>
+                )}
               </div>
+
+              {rightPanelTab === "queue" ? (
+                <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
+                  {queue.slice(queueIndex + 1, queueIndex + 12).map((item, i) => (
+                    <div
+                      key={`${item.id}_${i}`}
+                      onClick={() => playTrackAtIndex(queue, queueIndex + 1 + i)}
+                      className="flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-white/[0.06] cursor-pointer transition-colors"
+                    >
+                      <TrackArtwork
+                        track={item}
+                        className="w-8 h-8 rounded-lg"
+                        iconSize={13}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-zinc-200 truncate">
+                          {item.title}
+                        </p>
+                        <p className="text-[10px] text-zinc-500 truncate">
+                          {item.artist}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div
+                  ref={rightLyricsContainerRef}
+                  className="flex-1 overflow-y-auto space-y-2 pr-1 py-1"
+                >
+                  {!currentTrack ? (
+                    <p className="text-xs text-zinc-500 text-center py-6">
+                      Şarkı seçildiğinde sözler burada görünecek.
+                    </p>
+                  ) : lyricsData.loading ? (
+                    <div className="flex flex-col items-center justify-center py-8 gap-2 text-zinc-400">
+                      <Loader2 size={20} className="animate-spin text-[#F06B3C]" />
+                      <span className="text-[11px]">Sözler aranıyor...</span>
+                    </div>
+                  ) : lyricsData.synced.length > 0 ? (
+                    lyricsData.synced.map((line, i) => {
+                      const isActive = i === activeLyricIndex;
+                      return (
+                        <div
+                          key={`${line.time}_${i}`}
+                          data-lyric-idx={i}
+                          onClick={() => seekToSeconds(line.time)}
+                          className={`cursor-pointer rounded-xl px-2.5 py-1.5 text-xs transition-all ${
+                            isActive
+                              ? "bg-[#F06B3C]/20 text-white font-extrabold border border-[#F06B3C]/40 scale-[1.01]"
+                              : "text-zinc-400 hover:text-zinc-200 font-medium"
+                          }`}
+                        >
+                          {line.text}
+                        </div>
+                      );
+                    })
+                  ) : lyricsData.plain ? (
+                    <div className="whitespace-pre-line text-xs leading-relaxed text-zinc-300 px-1">
+                      {lyricsData.plain}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-zinc-500 text-center py-6">
+                      {lyricsData.error || "Bu şarkı için söz bulunamadı."}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </aside>
@@ -2444,8 +2815,25 @@ export default function HeliosApp() {
           </div>
         </div>
 
-        {/* Sağ: Oynatma Hızı (1x / 1.25x / 1.5x / 2x) + Ses Kontrolü */}
-        <div className="flex items-center justify-end gap-3 w-72">
+        {/* Sağ: Şarkı Sözleri + Oynatma Hızı (1x / 1.25x / 1.5x / 2x) + Ses Kontrolü */}
+        <div className="flex items-center justify-end gap-2.5 w-80">
+          {/* Şarkı Sözleri Butonu */}
+          <button
+            type="button"
+            onClick={() =>
+              setActiveView(activeView === "lyrics" ? "home" : "lyrics")
+            }
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all ${
+              activeView === "lyrics"
+                ? "bg-[#F06B3C] text-white border-[#F06B3C] shadow-lg shadow-orange-500/20"
+                : "bg-white/[0.05] text-zinc-300 border-white/10 hover:bg-white/10 hover:text-white"
+            }`}
+            title="Canlı Şarkı Sözlerini Aç / Kapat"
+          >
+            <MicVocal size={14} />
+            <span>Sözler</span>
+          </button>
+
           {/* Oynatma Hızı Butonu */}
           <button
             onClick={cyclePlaybackSpeed}
