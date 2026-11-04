@@ -1,7 +1,6 @@
 {
-  "version": "2.0.0",
-  "download_url": "https://github.com/ArtoMoon/Mihon/releases/latest/download/Mihon.exe",
+  "version": "2.1.0",
+  "download_url": "https://github.com/ArtoMoon/Mihon/releases/latest/download/Mihon_2.1.0_x64-setup.exe",
   "release_url": "https://github.com/ArtoMoon/Mihon/releases/latest",
-  "notes": "Mihon v2.0.0 — Modern Masaüstü Müzik Oynatıcı"
+  "notes": "Mihon v2.1.0 — Compact Opus audio engine (75% smaller cache), calibrated logarithmic volume curve, and Discord RPC pause fix"
 }
-

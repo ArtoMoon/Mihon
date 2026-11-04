@@ -533,7 +533,7 @@ export default function HeliosApp() {
           `Yeni sürüm bulundu: v${info.latest_version}! Tekrar tıklayarak hemen güncelleyebilirsin.`
         );
       } else {
-        showToast(`Mihon güncel (v${info?.current_version || "2.0.0"})`);
+        showToast(`Mihon güncel (v${info?.current_version || "2.1.0"})`);
       }
     } catch (err) {
       showToast(`Güncelleme kontrolü başarısız: ${err?.message || err}`, true);
@@ -547,8 +547,9 @@ export default function HeliosApp() {
     const audio = audioRef.current;
     if (!audio) return;
     const rawVol = mutedRef.current ? 0 : Math.max(0, Math.min(1, volumeRef.current));
-    // İnsan kulağına uygun logaritmik ses eğrisi (x^1.6) ve sabit ses seviyesi
-    const curvedVol = rawVol === 0 ? 0 : Math.pow(rawVol, 1.6);
+    // İnsan kulağına uygun gerçek logaritmik/kübik ses eğrisi (x^2.7) + ReplayGain (-8.4 dB / 0.38x) tavan dengelemesi
+    // Böylece %10 seviyesinde gerçekten fısıltı düzeyinde çalar ve %100'de kulak patlatmaz.
+    const curvedVol = rawVol === 0 ? 0 : Math.min(1, Math.pow(rawVol, 2.7) * 0.38);
     audio.muted = mutedRef.current;
     audio.volume = curvedVol;
   }, []);
@@ -854,7 +855,7 @@ export default function HeliosApp() {
   // Discord Rich Presence Senkronizasyonu
   const syncDiscordPresence = useCallback(
     async (track, playing, posSec, durSec) => {
-      if (!discordEnabled || !track) {
+      if (!discordEnabled || !track || !playing) {
         tauriInvoke("clear_discord_presence").catch(() => {});
         setDiscordConnected(false);
         return;
@@ -871,7 +872,7 @@ export default function HeliosApp() {
             0,
             Math.floor(durSec || track.duration_sec || 0)
           ),
-          isPlaying: Boolean(playing),
+          isPlaying: true,
         });
         setDiscordConnected(true);
       } catch {
@@ -1213,7 +1214,7 @@ export default function HeliosApp() {
                 ? "Kontrol Ediliyor..."
                 : updateInfo?.has_update
                 ? `Güncelle (v${updateInfo.latest_version})`
-                : `v${updateInfo?.current_version || "2.0.0"} • Güncelleme Kontrol`}
+                : `v${updateInfo?.current_version || "2.1.0"} • Güncelleme Kontrol`}
             </span>
           </button>
         </div>
@@ -2393,6 +2394,9 @@ export default function HeliosApp() {
             value={isMuted ? 0 : volume}
             onChange={(e) => {
               const v = parseFloat(e.target.value);
+              volumeRef.current = v;
+              mutedRef.current = false;
+              applyAudioSettings();
               setVolume(v);
               setIsMuted(false);
               localStorage.setItem("volume", JSON.stringify(v));
@@ -2663,7 +2667,10 @@ export default function HeliosApp() {
           applyAudioSettings();
           setIsPlaying(true);
         }}
-        onPause={() => setIsPlaying(false)}
+        onPause={() => {
+          setIsPlaying(false);
+          tauriInvoke("clear_discord_presence").catch(() => {});
+        }}
         onLoadedData={() => applyAudioSettings()}
         onLoadedMetadata={(e) => {
           const dur = e.currentTarget.duration;

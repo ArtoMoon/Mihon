@@ -33,7 +33,7 @@ Download the latest version from the [**GitHub Releases**](https://github.com/Ar
 
 | Package | Description |
 | :--- | :--- |
-| **`Mihon_2.0.0_x64-setup.exe`** | Standard Windows NSIS Setup Installer (creates desktop & Start Menu shortcuts) |
+| **`Mihon_2.1.0_x64-setup.exe`** | Standard Windows NSIS Setup Installer (creates desktop & Start Menu shortcuts) |
 | **`Mihon.exe`** | Standalone Portable Executable (no installation required) |
 
 ---

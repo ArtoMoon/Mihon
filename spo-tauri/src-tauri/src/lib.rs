@@ -499,63 +499,17 @@ async fn check_for_updates(repo: Option<String>) -> Result<UpdateInfo, String> {
 }
 
 #[tauri::command]
-async fn install_update(download_url: String) -> Result<(), String> {
-    let url = download_url.trim();
-    if url.is_empty() {
-        return Err("İndirme bağlantısı bulunamadı.".into());
-    }
-
-    let current_exe =
-        std::env::current_exe().map_err(|e| format!("Mevcut uygulama yolu alınamadı: {e}"))?;
-    let exe_dir = current_exe
-        .parent()
-        .ok_or_else(|| "Uygulama klasörü bulunamadı.".to_string())?;
-
-    let new_exe = exe_dir.join("Mihon.update.exe");
-    let old_exe = exe_dir.join("Mihon.old.exe");
-
-    let client = reqwest::Client::builder()
-        .user_agent("Mihon-Updater/2.0")
-        .timeout(std::time::Duration::from_secs(120))
-        .build()
-        .map_err(|e| e.to_string())?;
-
-    let resp = client
-        .get(url)
-        .send()
-        .await
-        .map_err(|e| format!("Güncelleme indirilemedi: {e}"))?;
-
-    if !resp.status().is_success() {
-        return Err(format!(
-            "Güncelleme dosyası sunucuda bulunamadı (HTTP {}).",
-            resp.status()
-        ));
-    }
-
-    let bytes = resp
-        .bytes()
-        .await
-        .map_err(|e| format!("Dosya okunamadı: {e}"))?;
-
-    if bytes.len() < 100_000 {
-        return Err("İndirilen dosya geçerli bir çalıştırılabilir dosya değil.".into());
-    }
-
-    std::fs::write(&new_exe, &bytes)
-        .map_err(|e| format!("Yeni güncelleme dosyası yazılamadı: {e}"))?;
-
-    let _ = std::fs::remove_file(&old_exe);
-    std::fs::rename(&current_exe, &old_exe)
-        .map_err(|e| format!("Mevcut uygulama yeniden adlandırılamadı: {e}"))?;
-
-    if let Err(e) = std::fs::rename(&new_exe, &current_exe) {
-        let _ = std::fs::rename(&old_exe, &current_exe);
-        return Err(format!("Yeni sürüm yerine taşınamadı: {e}"));
-    }
-
-    let _ = std::process::Command::new(&current_exe).spawn();
-    std::process::exit(0);
+async fn install_update(app: AppHandle, download_url: String) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    let url = if download_url.trim().is_empty() {
+        format!("https://github.com/{DEFAULT_GITHUB_REPO}/releases/latest")
+    } else {
+        download_url.trim().to_string()
+    };
+    app.opener()
+        .open_url(&url, None::<&str>)
+        .map_err(|e| format!("Güncelleme sayfası açılamadı: {e}"))?;
+    Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

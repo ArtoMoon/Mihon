@@ -92,6 +92,10 @@ pub fn set_presence(
     duration_sec: u64,
     is_playing: bool,
 ) -> Result<(), String> {
+    if !is_playing {
+        return clear_presence();
+    }
+
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs())
