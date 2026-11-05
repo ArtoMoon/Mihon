@@ -707,13 +707,73 @@ fn start_windows_media_key_poller(app: AppHandle) {
     #[link(name = "user32")]
     unsafe extern "system" {
         fn GetAsyncKeyState(vkey: i32) -> i16;
+        fn SetWindowsHookExW(
+            id_hook: i32,
+            lpfn: unsafe extern "system" fn(i32, usize, isize) -> isize,
+            hmod: isize,
+            dw_thread_id: u32,
+        ) -> isize;
+        fn CallNextHookEx(hhk: isize, n_code: i32, w_param: usize, l_param: isize) -> isize;
+        fn GetMessageW(lp_msg: *mut [u8; 48], hwnd: isize, min: u32, max: u32) -> i32;
     }
 
+    #[repr(C)]
+    struct KbdLlHookStruct {
+        vk_code: u32,
+        scan_code: u32,
+        flags: u32,
+        time: u32,
+        dw_extra_info: usize,
+    }
+
+    const WH_KEYBOARD_LL: i32 = 13;
+    const WM_KEYDOWN: usize = 0x0100;
+    const WM_SYSKEYDOWN: usize = 0x0104;
     const VK_MEDIA_NEXT_TRACK: i32 = 0xB0;
     const VK_MEDIA_PREV_TRACK: i32 = 0xB1;
     const VK_MEDIA_STOP: i32 = 0xB2;
     const VK_MEDIA_PLAY_PAUSE: i32 = 0xB3;
 
+    static HOOK_APP: OnceLock<AppHandle> = OnceLock::new();
+    let _ = HOOK_APP.set(app.clone());
+
+    unsafe extern "system" fn ll_keyboard_proc(
+        n_code: i32,
+        w_param: usize,
+        l_param: isize,
+    ) -> isize {
+        if n_code >= 0 && (w_param == WM_KEYDOWN || w_param == WM_SYSKEYDOWN) && l_param != 0 {
+            let kb = unsafe { &*(l_param as *const KbdLlHookStruct) };
+            let cmd = match kb.vk_code as i32 {
+                VK_MEDIA_NEXT_TRACK => Some("next"),
+                VK_MEDIA_PREV_TRACK => Some("prev"),
+                VK_MEDIA_STOP => Some("stop"),
+                VK_MEDIA_PLAY_PAUSE => Some("playpause"),
+                _ => None,
+            };
+            if let Some(action) = cmd {
+                if let Some(app_handle) = HOOK_APP.get() {
+                    if let Some(w) = app_handle.get_webview_window("main") {
+                        let js =
+                            format!("window.__mihonMediaKey && window.__mihonMediaKey('{action}')");
+                        let _ = w.eval(&js);
+                    }
+                }
+            }
+        }
+        unsafe { CallNextHookEx(0, n_code, w_param, l_param) }
+    }
+
+    // 1. Düşük seviyeli klavye kancası (Logitech G HUB / Mouse Makrolarının anlık SendInput sinyallerini 0ms kaçırmadan yakalar)
+    std::thread::spawn(move || unsafe {
+        let hook = SetWindowsHookExW(WH_KEYBOARD_LL, ll_keyboard_proc, 0, 0);
+        if hook != 0 {
+            let mut msg = [0u8; 48];
+            while GetMessageW(&mut msg, 0, 0, 0) > 0 {}
+        }
+    });
+
+    // 2. Yedek GetAsyncKeyState yoklayıcısı (Donanım HID medya tuşları için)
     std::thread::spawn(move || {
         let mut prev_next = false;
         let mut prev_prev = false;
@@ -721,7 +781,7 @@ fn start_windows_media_key_poller(app: AppHandle) {
         let mut prev_play = false;
 
         loop {
-            std::thread::sleep(std::time::Duration::from_millis(45));
+            std::thread::sleep(std::time::Duration::from_millis(25));
             unsafe {
                 let is_next = (GetAsyncKeyState(VK_MEDIA_NEXT_TRACK) as u16 & 0x8000) != 0;
                 let is_prev = (GetAsyncKeyState(VK_MEDIA_PREV_TRACK) as u16 & 0x8000) != 0;

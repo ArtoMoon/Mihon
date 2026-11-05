@@ -948,6 +948,29 @@ export default function HeliosApp() {
     [currentTrack, recentTracks, likedTracks, tracks, queue, showToast, playTrackAtIndex]
   );
 
+  // Gösterilecek aktif parça listesi
+  const activePlaylistObj = useMemo(
+    () => customPlaylists.find((p) => p.id === selectedPlaylistId) || null,
+    [customPlaylists, selectedPlaylistId]
+  );
+
+  const displayedTracks = useMemo(() => {
+    if (activeView === "artist") return artistTracks;
+    if (activeView === "recommendations") return recommendedTracks;
+    if (activeView === "liked") return likedTracks;
+    if (activeView === "recent") return recentTracks;
+    if (activeView === "playlist-detail") return activePlaylistObj?.tracks || [];
+    return tracks;
+  }, [
+    activeView,
+    artistTracks,
+    recommendedTracks,
+    likedTracks,
+    recentTracks,
+    activePlaylistObj,
+    tracks,
+  ]);
+
   // Sonraki / Önceki Şarkı (Liste bittiğinde veya İleri tuşuna basıldığında Sonsuz Benzer Tür Radyosu devreye girer)
   const handleNext = useCallback(
     async (userInitiated = true) => {
@@ -962,11 +985,20 @@ export default function HeliosApp() {
       }
       if (queueIndex + 1 < queue.length) {
         playTrackAtIndex(queue, queueIndex + 1);
-      } else if (repeatMode === "all") {
+      } else if (repeatMode === "all" && queue.length > 1) {
         playTrackAtIndex(queue, 0);
-      } else if (isRadioModeRef.current && currentTrack) {
+      } else if ((isRadioModeRef.current || userInitiated) && currentTrack) {
         try {
-          showToast(`“${currentTrack.title}” türünde yeni şarkılar ekleniyor...`);
+          if (userInitiated && displayedTracks.length > 1) {
+            const dispIdx = displayedTracks.findIndex(
+              (t) => t.id === currentTrack.id
+            );
+            if (dispIdx >= 0 && dispIdx + 1 < displayedTracks.length) {
+              playTrackAtIndex(displayedTracks, dispIdx + 1);
+              return;
+            }
+          }
+          showToast(`“${currentTrack.title}” türünde sıradaki şarkıya geçiliyor...`);
           const excludeIds = queue
             .flatMap((t) => [t.id, t.title])
             .filter(Boolean)
@@ -989,27 +1021,60 @@ export default function HeliosApp() {
         } catch {
           /* ignore */
         }
-        playTrackAtIndex(queue, 0);
+        if (userInitiated && queue.length > 0) {
+          playTrackAtIndex(queue, 0);
+        } else {
+          setIsPlaying(false);
+        }
       } else if (userInitiated && queue.length > 0) {
         playTrackAtIndex(queue, 0);
       } else {
         setIsPlaying(false);
       }
     },
-    [queue, queueIndex, shuffle, repeatMode, currentTrack, playTrackAtIndex, showToast]
+    [
+      queue,
+      queueIndex,
+      shuffle,
+      repeatMode,
+      currentTrack,
+      displayedTracks,
+      playTrackAtIndex,
+      showToast,
+    ]
   );
 
   const handlePrev = useCallback(() => {
     const audio = audioRef.current;
-    if (audio && audio.currentTime > 3) {
+    if (audio && audio.currentTime > 3 && queue.length <= 1) {
       audio.currentTime = 0;
       setCurrentTime(0);
       return;
     }
-    if (!queue.length) return;
-    const prevIdx = (queueIndex - 1 + queue.length) % queue.length;
-    playTrackAtIndex(queue, prevIdx);
-  }, [queue, queueIndex, playTrackAtIndex]);
+    if (queue.length > 1) {
+      const prevIdx = (queueIndex - 1 + queue.length) % queue.length;
+      playTrackAtIndex(queue, prevIdx);
+      return;
+    }
+    if (currentTrack && displayedTracks.length > 1) {
+      const dispIdx = displayedTracks.findIndex((t) => t.id === currentTrack.id);
+      if (dispIdx > 0) {
+        playTrackAtIndex(displayedTracks, dispIdx - 1);
+        return;
+      }
+    }
+    if (recentTracks.length > 1) {
+      const prevTrack = recentTracks.find((t) => t.id !== currentTrack?.id);
+      if (prevTrack) {
+        playTrackAtIndex([prevTrack, ...queue], 0);
+        return;
+      }
+    }
+    if (audio) {
+      audio.currentTime = 0;
+      setCurrentTime(0);
+    }
+  }, [queue, queueIndex, currentTrack, displayedTracks, recentTracks, playTrackAtIndex]);
 
   const togglePlayPause = useCallback(async () => {
     const audio = audioRef.current;
@@ -1427,29 +1492,6 @@ export default function HeliosApp() {
     handleNext,
     seekToSeconds,
     currentTime,
-  ]);
-
-  // Gösterilecek aktif parça listesi
-  const activePlaylistObj = useMemo(
-    () => customPlaylists.find((p) => p.id === selectedPlaylistId) || null,
-    [customPlaylists, selectedPlaylistId]
-  );
-
-  const displayedTracks = useMemo(() => {
-    if (activeView === "artist") return artistTracks;
-    if (activeView === "recommendations") return recommendedTracks;
-    if (activeView === "liked") return likedTracks;
-    if (activeView === "recent") return recentTracks;
-    if (activeView === "playlist-detail") return activePlaylistObj?.tracks || [];
-    return tracks;
-  }, [
-    activeView,
-    artistTracks,
-    recommendedTracks,
-    likedTracks,
-    recentTracks,
-    activePlaylistObj,
-    tracks,
   ]);
 
   const effectiveDuration = duration || currentTrack?.duration_sec || 0;
