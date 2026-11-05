@@ -200,40 +200,56 @@ function getTrackCover(track) {
   if (track.thumbnail && track.thumbnail.trim().length > 0) {
     return track.thumbnail;
   }
-  if (track.id && track.id.length === 11) {
+  if (track.id && track.id.length === 11 && !track.id.startsWith("sp:")) {
     return `https://i.ytimg.com/vi/${track.id}/hqdefault.jpg`;
   }
   return "";
 }
 
 // ============================================================================
-// Albüm Kapağı Bileşeni (Skeleton + Fallback İkon Destekli)
+// Albüm Kapağı Bileşeni (Skeleton + Yedek Kapak + Fallback İkon Destekli)
 // ============================================================================
 function TrackArtwork({ track, className = "w-11 h-11 rounded-xl", iconSize = 18 }) {
-  const src = getTrackCover(track);
+  const primarySrc = getTrackCover(track);
+  const ytFallbackSrc =
+    track?.id && track.id.length === 11 && !track.id.startsWith("sp:")
+      ? `https://i.ytimg.com/vi/${track.id}/hqdefault.jpg`
+      : "";
+  const [srcIndex, setSrcIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
-  const [errored, setErrored] = useState(false);
+
+  const sources = useMemo(() => {
+    const list = [];
+    if (primarySrc) list.push(primarySrc);
+    if (ytFallbackSrc && ytFallbackSrc !== primarySrc) list.push(ytFallbackSrc);
+    return list;
+  }, [primarySrc, ytFallbackSrc]);
+
+  const activeSrc = sources[srcIndex] || "";
 
   useEffect(() => {
+    setSrcIndex(0);
     setLoaded(false);
-    setErrored(false);
-  }, [src]);
+  }, [primarySrc, ytFallbackSrc]);
 
   return (
     <div
       className={`relative overflow-hidden bg-zinc-800/80 border border-white/10 shrink-0 flex items-center justify-center ${className}`}
     >
-      {!loaded && !errored && src && (
+      {!loaded && activeSrc && (
         <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-zinc-700/60 via-zinc-800/60 to-zinc-700/60" />
       )}
-      {src && !errored ? (
+      {activeSrc ? (
         <img
-          src={src}
+          src={activeSrc}
           alt={track?.title || "Kapak"}
-          loading="lazy"
+          referrerPolicy="no-referrer"
           onLoad={() => setLoaded(true)}
-          onError={() => setErrored(true)}
-          className={`w-full h-full object-cover transition-opacity duration-300 ${
+          onError={() => {
+            setLoaded(false);
+            setSrcIndex((prev) => prev + 1);
+          }}
+          className={`w-full h-full object-cover transition-opacity duration-200 ${
             loaded ? "opacity-100" : "opacity-0"
           }`}
         />
@@ -361,16 +377,20 @@ export default function HeliosApp() {
   }, [toastMessage]);
 
   const libraryLoadedRef = useRef(false);
+  const lastSavedPosRef = useRef(0);
+  const resumePendingRef = useRef(null);
 
-  // localStorage + Kalıcı Disk Kütüphanesi (library.json) yükleme & kurtarma
+  // localStorage + Kalıcı Disk Kütüphanesi (library.json) yükleme & kurtarma + Son Şarkıdan Devam Etme
   useEffect(() => {
     let localLiked = [];
     let localRecent = [];
     let localPlaylists = [];
+    let localPlayback = null;
     try {
       localLiked = JSON.parse(localStorage.getItem("liked") || "[]");
       localRecent = JSON.parse(localStorage.getItem("recent") || "[]");
       localPlaylists = JSON.parse(localStorage.getItem("custom_playlists") || "[]");
+      localPlayback = JSON.parse(localStorage.getItem("mihon_playback_state") || "null");
       const savedVol = JSON.parse(localStorage.getItem("volume") || "0.75");
       const savedRate = JSON.parse(localStorage.getItem("playback_rate") || "1");
       if (!Array.isArray(localLiked)) localLiked = [];
@@ -391,10 +411,13 @@ export default function HeliosApp() {
         const diskPlaylists = Array.isArray(disk?.custom_playlists) ? disk.custom_playlists : [];
         const diskLiked = Array.isArray(disk?.liked) ? disk.liked : [];
         const diskRecent = Array.isArray(disk?.recent) ? disk.recent : [];
+        const diskPlayback = disk?.playback_state || null;
 
         let finalPlaylists = localPlaylists.length > 0 ? localPlaylists : diskPlaylists;
         const finalLiked = localLiked.length > 0 ? localLiked : diskLiked;
         const finalRecent = localRecent.length > 0 ? localRecent : diskRecent;
+        const savedState =
+          localPlayback?.currentTrack?.id ? localPlayback : diskPlayback;
 
         if (finalLiked.length > 0 && localLiked.length === 0) {
           setLikedTracks(finalLiked);
@@ -407,6 +430,49 @@ export default function HeliosApp() {
         if (finalPlaylists.length > 0 && localPlaylists.length === 0) {
           setCustomPlaylists(finalPlaylists);
           localStorage.setItem("custom_playlists", JSON.stringify(finalPlaylists));
+        }
+
+        // Son çalan şarkıyı, kuyruğu ve kaldığı saniyeyi geri yükle (otomatik çalmadan duraklatılmış hazır beklet)
+        const fallbackTrack = savedState?.currentTrack || finalRecent[0] || null;
+        if (fallbackTrack && fallbackTrack.id) {
+          const restoredQueue =
+            Array.isArray(savedState?.queue) && savedState.queue.length > 0
+              ? savedState.queue
+              : [fallbackTrack, ...finalRecent.filter((t) => t.id !== fallbackTrack.id)];
+          const restoredIdx = Math.max(
+            0,
+            restoredQueue.findIndex((t) => t.id === fallbackTrack.id)
+          );
+          const restoredTime = Number(savedState?.currentTime) || 0;
+          const restoredDur =
+            Number(savedState?.duration) || Number(fallbackTrack.duration_sec) || 0;
+          isRadioModeRef.current = Boolean(savedState?.isRadioMode);
+
+          setQueue(restoredQueue);
+          setQueueIndex(restoredIdx);
+          setCurrentTrack(fallbackTrack);
+          setCurrentTime(restoredTime);
+          setDuration(restoredDur);
+          lastSavedPosRef.current = restoredTime;
+          resumePendingRef.current = {
+            trackId: fallbackTrack.id,
+            time: restoredTime,
+          };
+
+          // Arka planda ses dosyasını hazırla ve <audio> etiketine bağla ki Play'e basınca kaldığı saniyeden anında devam etsin
+          tauriInvoke("prepare_track", { id: fallbackTrack.id })
+            .then((localPath) => {
+              const audio = audioRef.current;
+              if (
+                audio &&
+                !audio.src &&
+                resumePendingRef.current?.trackId === fallbackTrack.id
+              ) {
+                audio.src = toAssetUrl(localPath);
+                audio.currentTime = restoredTime;
+              }
+            })
+            .catch(() => {});
         }
 
         // Eğer hem localStorage hem disk boşsa kullanıcının Spotify profil listelerini otomatik geri yükle
@@ -437,17 +503,73 @@ export default function HeliosApp() {
     })();
   }, []);
 
-  // Kütüphane değiştiğinde diske (`library.json`) kalıcı olarak kaydet
+  // Kütüphane ve son şarkı durumu değiştiğinde diske (`library.json`) ve localStorage'a kalıcı olarak kaydet
+  const persistPlaybackState = useCallback(
+    (overrideTime) => {
+      if (!libraryLoadedRef.current || !currentTrack) return;
+      const pos =
+        typeof overrideTime === "number"
+          ? overrideTime
+          : audioRef.current?.currentTime || currentTime || 0;
+      const playbackState = {
+        currentTrack,
+        queue: queue.slice(Math.max(0, queueIndex - 5), queueIndex + 35),
+        queueIndex,
+        currentTime: pos,
+        duration: duration || currentTrack.duration_sec || 0,
+        isRadioMode: isRadioModeRef.current,
+        updatedAt: Date.now(),
+      };
+      try {
+        localStorage.setItem("mihon_playback_state", JSON.stringify(playbackState));
+      } catch {
+        /* ignore */
+      }
+      tauriInvoke("save_library", {
+        data: {
+          custom_playlists: customPlaylists,
+          liked: likedTracks,
+          recent: recentTracks,
+          playback_state: playbackState,
+        },
+      }).catch(() => {});
+    },
+    [currentTrack, queue, queueIndex, currentTime, duration, customPlaylists, likedTracks, recentTracks]
+  );
+
   useEffect(() => {
     if (!libraryLoadedRef.current) return;
+    let savedPlayback = null;
+    try {
+      savedPlayback = JSON.parse(localStorage.getItem("mihon_playback_state") || "null");
+    } catch {
+      /* ignore */
+    }
+    if (currentTrack) {
+      savedPlayback = {
+        currentTrack,
+        queue: queue.slice(Math.max(0, queueIndex - 5), queueIndex + 35),
+        queueIndex,
+        currentTime: audioRef.current?.currentTime || currentTime || 0,
+        duration: duration || currentTrack.duration_sec || 0,
+        isRadioMode: isRadioModeRef.current,
+        updatedAt: Date.now(),
+      };
+      try {
+        localStorage.setItem("mihon_playback_state", JSON.stringify(savedPlayback));
+      } catch {
+        /* ignore */
+      }
+    }
     tauriInvoke("save_library", {
       data: {
         custom_playlists: customPlaylists,
         liked: likedTracks,
         recent: recentTracks,
+        playback_state: savedPlayback,
       },
     }).catch(() => {});
-  }, [customPlaylists, likedTracks, recentTracks]);
+  }, [customPlaylists, likedTracks, recentTracks, currentTrack, queue, queueIndex]);
 
   // Önbellek bilgisini güncelle
   const refreshCacheInfo = useCallback(async () => {
@@ -889,20 +1011,59 @@ export default function HeliosApp() {
     playTrackAtIndex(queue, prevIdx);
   }, [queue, queueIndex, playTrackAtIndex]);
 
-  const togglePlayPause = useCallback(() => {
+  const togglePlayPause = useCallback(async () => {
     const audio = audioRef.current;
     if (!audio) return;
     if (!currentTrack) {
       if (tracks.length > 0) playTrackAtIndex(tracks, 0);
       return;
     }
-    if (!audio.src) return;
+    if (!audio.src) {
+      setIsTrackLoading(true);
+      try {
+        const localPath = await tauriInvoke("prepare_track", {
+          id: currentTrack.id,
+        });
+        audio.src = toAssetUrl(localPath);
+        audio.playbackRate = playbackRate;
+        applyAudioSettings();
+        const resumeSec =
+          resumePendingRef.current?.trackId === currentTrack.id
+            ? resumePendingRef.current.time
+            : currentTime || 0;
+        if (resumeSec > 0) {
+          audio.currentTime = resumeSec;
+        }
+        resumePendingRef.current = null;
+        await audio.play();
+        setIsPlaying(true);
+      } catch {
+        /* ignore */
+      } finally {
+        setIsTrackLoading(false);
+      }
+      return;
+    }
     if (audio.paused) {
+      if (resumePendingRef.current?.trackId === currentTrack.id) {
+        const resumeSec = resumePendingRef.current.time || 0;
+        if (resumeSec > 0 && Math.abs(audio.currentTime - resumeSec) > 1) {
+          audio.currentTime = resumeSec;
+        }
+        resumePendingRef.current = null;
+      }
       audio.play().catch(() => {});
     } else {
       audio.pause();
     }
-  }, [currentTrack, tracks, playTrackAtIndex]);
+  }, [
+    currentTrack,
+    tracks,
+    playTrackAtIndex,
+    playbackRate,
+    applyAudioSettings,
+    currentTime,
+  ]);
 
   // Discord Rich Presence Senkronizasyonu
   const syncDiscordPresence = useCallback(
@@ -1116,9 +1277,61 @@ export default function HeliosApp() {
     }
   };
 
-  // Klavye Kısayolları
+  const mediaKeyDebounceRef = useRef(0);
+
+  const triggerMediaAction = useCallback(
+    (action) => {
+      const now = Date.now();
+      if (now - mediaKeyDebounceRef.current < 250) return;
+      mediaKeyDebounceRef.current = now;
+      if (action === "next") {
+        handleNext(true);
+      } else if (action === "prev") {
+        handlePrev();
+      } else if (action === "playpause") {
+        togglePlayPause();
+      } else if (action === "stop") {
+        audioRef.current?.pause();
+      }
+    },
+    [handleNext, handlePrev, togglePlayPause]
+  );
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.__mihonMediaKey = triggerMediaAction;
+    }
+    return () => {
+      if (typeof window !== "undefined" && window.__mihonMediaKey === triggerMediaAction) {
+        delete window.__mihonMediaKey;
+      }
+    };
+  }, [triggerMediaAction]);
+
+  // Klavye Kısayolları + Windows Medya Tuşları (Fn+F5 / Fn+F6 / Fn+F7 - MediaSession API)
   useEffect(() => {
     const onKeyDown = (e) => {
+      if (e.key === "MediaTrackNext") {
+        e.preventDefault();
+        triggerMediaAction("next");
+        return;
+      }
+      if (e.key === "MediaTrackPrevious") {
+        e.preventDefault();
+        triggerMediaAction("prev");
+        return;
+      }
+      if (e.key === "MediaPlayPause") {
+        e.preventDefault();
+        triggerMediaAction("playpause");
+        return;
+      }
+      if (e.key === "MediaStop") {
+        e.preventDefault();
+        triggerMediaAction("stop");
+        return;
+      }
+
       const isInput = ["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName);
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -1145,7 +1358,76 @@ export default function HeliosApp() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [togglePlayPause, seekToSeconds, currentTime]);
+  }, [togglePlayPause, seekToSeconds, currentTime, triggerMediaAction]);
+
+  // Windows SMTC / MediaSession Entegrasyonu (Fn+F6 vb. sistem medya tuşlarıyla arka planda da şarkı değiştirme)
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    const ms = navigator.mediaSession;
+
+    if (currentTrack) {
+      const coverUrl = getTrackCover(currentTrack);
+      try {
+        ms.metadata = new MediaMetadata({
+          title: currentTrack.title || "Mihon",
+          artist: currentTrack.artist || "Mihon",
+          album: currentTrack.album || "Mihon",
+          artwork: coverUrl
+            ? [
+                { src: coverUrl, sizes: "512x512", type: "image/jpeg" },
+                { src: coverUrl, sizes: "256x256", type: "image/jpeg" },
+              ]
+            : [],
+        });
+      } catch {
+        /* ignore */
+      }
+    }
+
+    ms.playbackState = isPlaying ? "playing" : "paused";
+
+    const safeSetHandler = (action, fn) => {
+      try {
+        ms.setActionHandler(action, fn);
+      } catch {
+        /* ignore */
+      }
+    };
+
+    safeSetHandler("play", () => {
+      if (audioRef.current?.paused) triggerMediaAction("playpause");
+    });
+    safeSetHandler("pause", () => {
+      if (audioRef.current && !audioRef.current.paused) triggerMediaAction("playpause");
+    });
+    safeSetHandler("previoustrack", () => {
+      triggerMediaAction("prev");
+    });
+    safeSetHandler("nexttrack", () => {
+      triggerMediaAction("next");
+    });
+    safeSetHandler("seekto", (details) => {
+      if (typeof details?.seekTime === "number") {
+        seekToSeconds(details.seekTime);
+      }
+    });
+    safeSetHandler("seekbackward", (details) => {
+      const offset = details?.seekOffset || 10;
+      seekToSeconds((audioRef.current?.currentTime || currentTime) - offset);
+    });
+    safeSetHandler("seekforward", (details) => {
+      const offset = details?.seekOffset || 10;
+      seekToSeconds((audioRef.current?.currentTime || currentTime) + offset);
+    });
+  }, [
+    currentTrack,
+    isPlaying,
+    togglePlayPause,
+    handlePrev,
+    handleNext,
+    seekToSeconds,
+    currentTime,
+  ]);
 
   // Gösterilecek aktif parça listesi
   const activePlaylistObj = useMemo(
@@ -2983,6 +3265,7 @@ export default function HeliosApp() {
         }}
         onPause={() => {
           setIsPlaying(false);
+          persistPlaybackState(audioRef.current?.currentTime || currentTime);
           tauriInvoke("clear_discord_presence").catch(() => {});
         }}
         onLoadedData={() => applyAudioSettings()}
@@ -2993,7 +3276,12 @@ export default function HeliosApp() {
           applyAudioSettings();
         }}
         onTimeUpdate={(e) => {
-          if (!isSeeking) setCurrentTime(e.currentTarget.currentTime);
+          const t = e.currentTarget.currentTime;
+          if (!isSeeking) setCurrentTime(t);
+          if (Math.abs(t - lastSavedPosRef.current) >= 4) {
+            lastSavedPosRef.current = t;
+            persistPlaybackState(t);
+          }
         }}
         onEnded={() => {
           if (repeatMode === "one" && audioRef.current) {

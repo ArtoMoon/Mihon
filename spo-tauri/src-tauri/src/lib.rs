@@ -702,6 +702,70 @@ async fn install_update(app: AppHandle, download_url: String) -> Result<(), Stri
     Ok(())
 }
 
+#[cfg(target_os = "windows")]
+fn start_windows_media_key_poller(app: AppHandle) {
+    #[link(name = "user32")]
+    unsafe extern "system" {
+        fn GetAsyncKeyState(vkey: i32) -> i16;
+    }
+
+    const VK_MEDIA_NEXT_TRACK: i32 = 0xB0;
+    const VK_MEDIA_PREV_TRACK: i32 = 0xB1;
+    const VK_MEDIA_STOP: i32 = 0xB2;
+    const VK_MEDIA_PLAY_PAUSE: i32 = 0xB3;
+
+    std::thread::spawn(move || {
+        let mut prev_next = false;
+        let mut prev_prev = false;
+        let mut prev_stop = false;
+        let mut prev_play = false;
+
+        loop {
+            std::thread::sleep(std::time::Duration::from_millis(45));
+            unsafe {
+                let is_next = (GetAsyncKeyState(VK_MEDIA_NEXT_TRACK) as u16 & 0x8000) != 0;
+                let is_prev = (GetAsyncKeyState(VK_MEDIA_PREV_TRACK) as u16 & 0x8000) != 0;
+                let is_stop = (GetAsyncKeyState(VK_MEDIA_STOP) as u16 & 0x8000) != 0;
+                let is_play = (GetAsyncKeyState(VK_MEDIA_PLAY_PAUSE) as u16 & 0x8000) != 0;
+
+                if is_next && !prev_next {
+                    if let Some(w) = app.get_webview_window("main") {
+                        let _ = w.eval(
+                            "window.__mihonMediaKey && window.__mihonMediaKey('next')",
+                        );
+                    }
+                }
+                if is_prev && !prev_prev {
+                    if let Some(w) = app.get_webview_window("main") {
+                        let _ = w.eval(
+                            "window.__mihonMediaKey && window.__mihonMediaKey('prev')",
+                        );
+                    }
+                }
+                if is_stop && !prev_stop {
+                    if let Some(w) = app.get_webview_window("main") {
+                        let _ = w.eval(
+                            "window.__mihonMediaKey && window.__mihonMediaKey('stop')",
+                        );
+                    }
+                }
+                if is_play && !prev_play {
+                    if let Some(w) = app.get_webview_window("main") {
+                        let _ = w.eval(
+                            "window.__mihonMediaKey && window.__mihonMediaKey('playpause')",
+                        );
+                    }
+                }
+
+                prev_next = is_next;
+                prev_prev = is_prev;
+                prev_stop = is_stop;
+                prev_play = is_play;
+            }
+        }
+    });
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     eprintln!("[Helios] Starting...");
@@ -717,6 +781,9 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             eprintln!("[Mihon] Setup started");
+            #[cfg(target_os = "windows")]
+            start_windows_media_key_poller(app.handle().clone());
+
             if let Ok(exe) = std::env::current_exe() {
                 if let Some(dir) = exe.parent() {
                     let _ = std::fs::remove_file(dir.join("Mihon.old.exe"));
