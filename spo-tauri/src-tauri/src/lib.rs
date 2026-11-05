@@ -791,6 +791,9 @@ fn start_windows_media_key_poller(app: AppHandle) {
             w_param: usize,
             l_param: isize,
         ) -> isize;
+        fn RegisterHotKey(hwnd: isize, id: i32, fs_modifiers: u32, vk: u32) -> i32;
+        fn RegisterShellHookWindow(hwnd: isize) -> i32;
+        fn RegisterWindowMessageW(lp_string: *const u16) -> u32;
     }
 
     #[repr(C)]
@@ -835,8 +838,10 @@ fn start_windows_media_key_poller(app: AppHandle) {
     const WH_KEYBOARD_LL: i32 = 13;
     const WM_KEYDOWN: usize = 0x0100;
     const WM_SYSKEYDOWN: usize = 0x0104;
+    const WM_HOTKEY: u32 = 0x0312;
     const WM_INPUT: u32 = 0x00FF;
     const WM_APPCOMMAND: u32 = 0x0319;
+    const HSHELL_APPCOMMAND: usize = 12;
     const RIDEV_INPUTSINK: u32 = 0x00000100;
     const RID_INPUT: u32 = 0x10000003;
     const RIM_TYPEKEYBOARD: u32 = 1;
@@ -856,6 +861,7 @@ fn start_windows_media_key_poller(app: AppHandle) {
     const APPCOMMAND_MEDIA_PAUSE: i32 = 47;
 
     static HOOK_APP: OnceLock<AppHandle> = OnceLock::new();
+    static SHELLHOOK_MSG: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
     static ORIG_MAIN_WNDPROC: std::sync::atomic::AtomicIsize =
         std::sync::atomic::AtomicIsize::new(0);
     static LAST_EMIT_MS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
@@ -1027,6 +1033,22 @@ fn start_windows_media_key_poller(app: AppHandle) {
         if msg == WM_APPCOMMAND && handle_appcommand(l_param) {
             return 1;
         }
+        let sh_msg = SHELLHOOK_MSG.load(std::sync::atomic::Ordering::Relaxed);
+        if sh_msg != 0 && msg == sh_msg && w_param == HSHELL_APPCOMMAND {
+            if handle_appcommand(l_param) {
+                return 1;
+            }
+        }
+        if msg == WM_HOTKEY {
+            match w_param as i32 {
+                1001 => emit_media_action("next"),
+                1002 => emit_media_action("prev"),
+                1003 => emit_media_action("playpause"),
+                1004 => emit_media_action("stop"),
+                _ => {}
+            }
+            return 1;
+        }
         if msg == WM_INPUT && l_param != 0 {
             let mut size: u32 = 0;
             let header_size = std::mem::size_of::<RawInputHeader>() as u32;
@@ -1122,12 +1144,25 @@ fn start_windows_media_key_poller(app: AppHandle) {
             0,
             0,
             0,
-            -3isize, // HWND_MESSAGE
+            0, // Top-level görünmez pencere (RegisterShellHookWindow için zorunlu)
             0,
             0,
             0,
         );
         if hwnd != 0 {
+            let sh_str: Vec<u16> = "SHELLHOOK\0".encode_utf16().collect();
+            let sh_id = RegisterWindowMessageW(sh_str.as_ptr());
+            if sh_id != 0 {
+                SHELLHOOK_MSG.store(sh_id, std::sync::atomic::Ordering::Relaxed);
+                RegisterShellHookWindow(hwnd);
+            }
+
+            // Global Hotkey kaydı (UIPI engeline takılmadan Logitech G HUB medya tuşlarını yakalar)
+            let _ = RegisterHotKey(hwnd, 1001, 0, VK_MEDIA_NEXT_TRACK as u32);
+            let _ = RegisterHotKey(hwnd, 1002, 0, VK_MEDIA_PREV_TRACK as u32);
+            let _ = RegisterHotKey(hwnd, 1003, 0, VK_MEDIA_PLAY_PAUSE as u32);
+            let _ = RegisterHotKey(hwnd, 1004, 0, VK_MEDIA_STOP as u32);
+
             let devices = [
                 // HID Consumer Control (0x0C, 0x01) — Logitech G HUB medya makrolarının gönderdiği paketler
                 RawInputDevice {

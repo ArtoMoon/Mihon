@@ -19,7 +19,8 @@
         "minWidth": 960,
         "minHeight": 640,
         "backgroundColor": "#09090B",
-        "decorations": false
+        "decorations": false,
+        "additionalBrowserArgs": "--disable-features=HardwareMediaKeyHandling,MediaSessionService"
       }
     ],
     "security": {
