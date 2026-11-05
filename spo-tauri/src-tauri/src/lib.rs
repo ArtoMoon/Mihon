@@ -124,6 +124,36 @@ async fn recommend_similar(
     .await
 }
 
+#[cfg(target_os = "windows")]
+static SMTC_GLOBAL: OnceLock<windows::Media::SystemMediaTransportControls> = OnceLock::new();
+
+#[cfg(target_os = "windows")]
+fn update_windows_smtc(title: &str, artist: &str, album: &str, is_playing: bool) {
+    if let Some(smtc) = SMTC_GLOBAL.get() {
+        let _ = smtc.SetIsEnabled(true);
+        let _ = smtc.SetIsPlayEnabled(true);
+        let _ = smtc.SetIsPauseEnabled(true);
+        let _ = smtc.SetIsNextEnabled(true);
+        let _ = smtc.SetIsPreviousEnabled(true);
+        let _ = smtc.SetIsStopEnabled(true);
+        let status = if is_playing {
+            windows::Media::MediaPlaybackStatus::Playing
+        } else {
+            windows::Media::MediaPlaybackStatus::Paused
+        };
+        let _ = smtc.SetPlaybackStatus(status);
+        if let Ok(updater) = smtc.DisplayUpdater() {
+            let _ = updater.SetType(windows::Media::MediaPlaybackType::Music);
+            if let Ok(props) = updater.MusicProperties() {
+                let _ = props.SetTitle(&windows::core::HSTRING::from(title));
+                let _ = props.SetArtist(&windows::core::HSTRING::from(artist));
+                let _ = props.SetAlbumTitle(&windows::core::HSTRING::from(album));
+            }
+            let _ = updater.Update();
+        }
+    }
+}
+
 #[tauri::command]
 async fn update_discord_presence(
     id: String,
@@ -135,6 +165,9 @@ async fn update_discord_presence(
     duration_sec: u64,
     is_playing: bool,
 ) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    update_windows_smtc(&title, &artist, &album, is_playing);
+
     tokio::task::spawn_blocking(move || {
         discord::set_presence(
             &id,
@@ -153,6 +186,11 @@ async fn update_discord_presence(
 
 #[tauri::command]
 async fn clear_discord_presence() -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    if let Some(smtc) = SMTC_GLOBAL.get() {
+        let _ = smtc.SetPlaybackStatus(windows::Media::MediaPlaybackStatus::Paused);
+    }
+
     tokio::task::spawn_blocking(discord::clear_presence)
         .await
         .map_err(|e| e.to_string())?
@@ -842,6 +880,71 @@ fn start_windows_media_key_poller(app: AppHandle) {
         }
     }
 
+    // Windows Native SMTC (`SystemMediaTransportControls`) Bağlantısı:
+    // Logitech G HUB fare tuşları doğrudan Windows SMTC oturumuna NextTrack / PreviousTrack / PlayPause gönderir.
+    if let Some(main_win) = app.get_webview_window("main") {
+        if let Ok(hwnd) = main_win.hwnd() {
+            unsafe {
+                if let Ok(interop) = windows::core::factory::<
+                    windows::Media::SystemMediaTransportControls,
+                    windows::Win32::System::WinRT::ISystemMediaTransportControlsInterop,
+                >() {
+                    if let Ok(smtc) = interop
+                        .GetForWindow::<windows::Media::SystemMediaTransportControls>(
+                            windows::Win32::Foundation::HWND(hwnd.0),
+                        )
+                    {
+                        let _ = smtc.SetIsEnabled(true);
+                        let _ = smtc.SetIsPlayEnabled(true);
+                        let _ = smtc.SetIsPauseEnabled(true);
+                        let _ = smtc.SetIsNextEnabled(true);
+                        let _ = smtc.SetIsPreviousEnabled(true);
+                        let _ = smtc.SetIsStopEnabled(true);
+                        let _ = smtc.SetPlaybackStatus(windows::Media::MediaPlaybackStatus::Playing);
+
+                        if let Ok(updater) = smtc.DisplayUpdater() {
+                            let _ = updater.SetType(windows::Media::MediaPlaybackType::Music);
+                            if let Ok(props) = updater.MusicProperties() {
+                                let _ = props.SetTitle(&windows::core::HSTRING::from("Mihon"));
+                                let _ = props.SetArtist(&windows::core::HSTRING::from("Mihon Music"));
+                            }
+                            let _ = updater.Update();
+                        }
+
+                        let handler = windows::Foundation::TypedEventHandler::<
+                            windows::Media::SystemMediaTransportControls,
+                            windows::Media::SystemMediaTransportControlsButtonPressedEventArgs,
+                        >::new(|_sender, args| {
+                            if let Some(args) = args.as_ref() {
+                                if let Ok(btn) = args.Button() {
+                                    match btn {
+                                        windows::Media::SystemMediaTransportControlsButton::Next => {
+                                            emit_media_action("next");
+                                        }
+                                        windows::Media::SystemMediaTransportControlsButton::Previous => {
+                                            emit_media_action("prev");
+                                        }
+                                        windows::Media::SystemMediaTransportControlsButton::Play
+                                        | windows::Media::SystemMediaTransportControlsButton::Pause => {
+                                            emit_media_action("playpause");
+                                        }
+                                        windows::Media::SystemMediaTransportControlsButton::Stop => {
+                                            emit_media_action("stop");
+                                        }
+                                        _ => {}
+                                    }
+                                }
+                            }
+                            Ok(())
+                        });
+                        let _ = smtc.ButtonPressed(&handler);
+                        let _ = SMTC_GLOBAL.set(smtc);
+                    }
+                }
+            }
+        }
+    }
+
     fn handle_appcommand(l_param: isize) -> bool {
         let cmd = ((l_param >> 16) & 0x0FFF) as i32;
         match cmd {
@@ -885,7 +988,11 @@ fn start_windows_media_key_poller(app: AppHandle) {
                 }
             }
             unsafe {
-                let old = SetWindowLongPtrW(hwnd.0 as isize, GWLP_WNDPROC, subclass_wnd_proc as isize);
+                let old = SetWindowLongPtrW(
+                    hwnd.0 as isize,
+                    GWLP_WNDPROC,
+                    subclass_wnd_proc as *const () as isize,
+                );
                 if old != 0 {
                     ORIG_MAIN_WNDPROC.store(old, std::sync::atomic::Ordering::Relaxed);
                 }
