@@ -715,6 +715,74 @@ fn start_windows_media_key_poller(app: AppHandle) {
         ) -> isize;
         fn CallNextHookEx(hhk: isize, n_code: i32, w_param: usize, l_param: isize) -> isize;
         fn GetMessageW(lp_msg: *mut [u8; 48], hwnd: isize, min: u32, max: u32) -> i32;
+        fn TranslateMessage(lp_msg: *const [u8; 48]) -> i32;
+        fn DispatchMessageW(lp_msg: *const [u8; 48]) -> isize;
+        fn DefWindowProcW(hwnd: isize, msg: u32, w_param: usize, l_param: isize) -> isize;
+        fn RegisterClassW(lp_wnd_class: *const WndClassW) -> u16;
+        fn CreateWindowExW(
+            dw_ex_style: u32,
+            lp_class_name: *const u16,
+            lp_window_name: *const u16,
+            dw_style: u32,
+            x: i32,
+            y: i32,
+            n_width: i32,
+            n_height: i32,
+            h_wnd_parent: isize,
+            h_menu: isize,
+            h_instance: isize,
+            lp_param: isize,
+        ) -> isize;
+        fn RegisterRawInputDevices(
+            p_raw_input_devices: *const RawInputDevice,
+            ui_num_devices: u32,
+            cb_size: u32,
+        ) -> i32;
+        fn GetRawInputData(
+            h_raw_input: isize,
+            ui_command: u32,
+            p_data: *mut u8,
+            pcb_size: *mut u32,
+            cb_size_header: u32,
+        ) -> u32;
+        fn SetWindowLongPtrW(hwnd: isize, n_index: i32, dw_new_long: isize) -> isize;
+        fn CallWindowProcW(
+            lp_prev_wnd_func: isize,
+            hwnd: isize,
+            msg: u32,
+            w_param: usize,
+            l_param: isize,
+        ) -> isize;
+    }
+
+    #[repr(C)]
+    struct WndClassW {
+        style: u32,
+        lpfn_wnd_proc: unsafe extern "system" fn(isize, u32, usize, isize) -> isize,
+        cb_cls_extra: i32,
+        cb_wnd_extra: i32,
+        h_instance: isize,
+        h_icon: isize,
+        h_cursor: isize,
+        hbr_background: isize,
+        lpsz_menu_name: *const u16,
+        lpsz_class_name: *const u16,
+    }
+
+    #[repr(C)]
+    struct RawInputDevice {
+        us_usage_page: u16,
+        us_usage: u16,
+        dw_flags: u32,
+        hwnd_target: isize,
+    }
+
+    #[repr(C)]
+    struct RawInputHeader {
+        dw_type: u32,
+        dw_size: u32,
+        h_device: isize,
+        w_param: usize,
     }
 
     #[repr(C)]
@@ -729,13 +797,101 @@ fn start_windows_media_key_poller(app: AppHandle) {
     const WH_KEYBOARD_LL: i32 = 13;
     const WM_KEYDOWN: usize = 0x0100;
     const WM_SYSKEYDOWN: usize = 0x0104;
+    const WM_INPUT: u32 = 0x00FF;
+    const WM_APPCOMMAND: u32 = 0x0319;
+    const RIDEV_INPUTSINK: u32 = 0x00000100;
+    const RID_INPUT: u32 = 0x10000003;
+    const RIM_TYPEKEYBOARD: u32 = 1;
+    const RIM_TYPEHID: u32 = 2;
+    const GWLP_WNDPROC: i32 = -4;
+
     const VK_MEDIA_NEXT_TRACK: i32 = 0xB0;
     const VK_MEDIA_PREV_TRACK: i32 = 0xB1;
     const VK_MEDIA_STOP: i32 = 0xB2;
     const VK_MEDIA_PLAY_PAUSE: i32 = 0xB3;
 
+    const APPCOMMAND_MEDIA_NEXTTRACK: i32 = 11;
+    const APPCOMMAND_MEDIA_PREVIOUSTRACK: i32 = 12;
+    const APPCOMMAND_MEDIA_STOP: i32 = 13;
+    const APPCOMMAND_MEDIA_PLAY_PAUSE: i32 = 14;
+    const APPCOMMAND_MEDIA_PLAY: i32 = 46;
+    const APPCOMMAND_MEDIA_PAUSE: i32 = 47;
+
     static HOOK_APP: OnceLock<AppHandle> = OnceLock::new();
+    static ORIG_MAIN_WNDPROC: std::sync::atomic::AtomicIsize =
+        std::sync::atomic::AtomicIsize::new(0);
+    static LAST_EMIT_MS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let _ = HOOK_APP.set(app.clone());
+
+    fn emit_media_action(action: &str) {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0);
+        let prev = LAST_EMIT_MS.load(std::sync::atomic::Ordering::Relaxed);
+        if now.saturating_sub(prev) < 220 {
+            return;
+        }
+        LAST_EMIT_MS.store(now, std::sync::atomic::Ordering::Relaxed);
+
+        if let Some(app_handle) = HOOK_APP.get() {
+            if let Some(w) = app_handle.get_webview_window("main") {
+                let js = format!("window.__mihonMediaKey && window.__mihonMediaKey('{action}')");
+                let _ = w.eval(&js);
+            }
+        }
+    }
+
+    fn handle_appcommand(l_param: isize) -> bool {
+        let cmd = ((l_param >> 16) & 0x0FFF) as i32;
+        match cmd {
+            APPCOMMAND_MEDIA_NEXTTRACK => {
+                emit_media_action("next");
+                true
+            }
+            APPCOMMAND_MEDIA_PREVIOUSTRACK => {
+                emit_media_action("prev");
+                true
+            }
+            APPCOMMAND_MEDIA_STOP => {
+                emit_media_action("stop");
+                true
+            }
+            APPCOMMAND_MEDIA_PLAY_PAUSE | APPCOMMAND_MEDIA_PLAY | APPCOMMAND_MEDIA_PAUSE => {
+                emit_media_action("playpause");
+                true
+            }
+            _ => false,
+        }
+    }
+
+    // Ana Tauri penceresinde WM_APPCOMMAND alt sınıflaması (pencere odaklıyken G HUB APPCOMMAND gönderirse yakalar)
+    if let Some(main_win) = app.get_webview_window("main") {
+        if let Ok(hwnd) = main_win.hwnd() {
+            unsafe extern "system" fn subclass_wnd_proc(
+                hwnd: isize,
+                msg: u32,
+                w_param: usize,
+                l_param: isize,
+            ) -> isize {
+                if msg == WM_APPCOMMAND && handle_appcommand(l_param) {
+                    return 1;
+                }
+                let orig = ORIG_MAIN_WNDPROC.load(std::sync::atomic::Ordering::Relaxed);
+                if orig != 0 {
+                    unsafe { CallWindowProcW(orig, hwnd, msg, w_param, l_param) }
+                } else {
+                    unsafe { DefWindowProcW(hwnd, msg, w_param, l_param) }
+                }
+            }
+            unsafe {
+                let old = SetWindowLongPtrW(hwnd.0 as isize, GWLP_WNDPROC, subclass_wnd_proc as isize);
+                if old != 0 {
+                    ORIG_MAIN_WNDPROC.store(old, std::sync::atomic::Ordering::Relaxed);
+                }
+            }
+        }
+    }
 
     unsafe extern "system" fn ll_keyboard_proc(
         n_code: i32,
@@ -744,36 +900,159 @@ fn start_windows_media_key_poller(app: AppHandle) {
     ) -> isize {
         if n_code >= 0 && (w_param == WM_KEYDOWN || w_param == WM_SYSKEYDOWN) && l_param != 0 {
             let kb = unsafe { &*(l_param as *const KbdLlHookStruct) };
-            let cmd = match kb.vk_code as i32 {
-                VK_MEDIA_NEXT_TRACK => Some("next"),
-                VK_MEDIA_PREV_TRACK => Some("prev"),
-                VK_MEDIA_STOP => Some("stop"),
-                VK_MEDIA_PLAY_PAUSE => Some("playpause"),
-                _ => None,
-            };
-            if let Some(action) = cmd {
-                if let Some(app_handle) = HOOK_APP.get() {
-                    if let Some(w) = app_handle.get_webview_window("main") {
-                        let js =
-                            format!("window.__mihonMediaKey && window.__mihonMediaKey('{action}')");
-                        let _ = w.eval(&js);
-                    }
-                }
+            match kb.vk_code as i32 {
+                VK_MEDIA_NEXT_TRACK => emit_media_action("next"),
+                VK_MEDIA_PREV_TRACK => emit_media_action("prev"),
+                VK_MEDIA_STOP => emit_media_action("stop"),
+                VK_MEDIA_PLAY_PAUSE => emit_media_action("playpause"),
+                _ => {}
             }
         }
         unsafe { CallNextHookEx(0, n_code, w_param, l_param) }
     }
 
-    // 1. Düşük seviyeli klavye kancası (Logitech G HUB / Mouse Makrolarının anlık SendInput sinyallerini 0ms kaçırmadan yakalar)
+    unsafe extern "system" fn raw_input_wnd_proc(
+        hwnd: isize,
+        msg: u32,
+        w_param: usize,
+        l_param: isize,
+    ) -> isize {
+        if msg == WM_APPCOMMAND && handle_appcommand(l_param) {
+            return 1;
+        }
+        if msg == WM_INPUT && l_param != 0 {
+            let mut size: u32 = 0;
+            let header_size = std::mem::size_of::<RawInputHeader>() as u32;
+            unsafe {
+                GetRawInputData(
+                    l_param,
+                    RID_INPUT,
+                    std::ptr::null_mut(),
+                    &mut size,
+                    header_size,
+                );
+                if size > 0 && size <= 512 {
+                    let mut buf = vec![0u8; size as usize];
+                    if GetRawInputData(
+                        l_param,
+                        RID_INPUT,
+                        buf.as_mut_ptr(),
+                        &mut size,
+                        header_size,
+                    ) == size
+                    {
+                        let header = &*(buf.as_ptr() as *const RawInputHeader);
+                        let payload = &buf[header_size as usize..];
+                        if header.dw_type == RIM_TYPEKEYBOARD && payload.len() >= 10 {
+                            let flags = u16::from_le_bytes([payload[2], payload[3]]);
+                            let vkey = u16::from_le_bytes([payload[6], payload[7]]) as i32;
+                            // RI_KEY_BREAK (0x01) değilse (yani tuşa basıldıysa)
+                            if (flags & 0x01) == 0 {
+                                match vkey {
+                                    VK_MEDIA_NEXT_TRACK => emit_media_action("next"),
+                                    VK_MEDIA_PREV_TRACK => emit_media_action("prev"),
+                                    VK_MEDIA_STOP => emit_media_action("stop"),
+                                    VK_MEDIA_PLAY_PAUSE => emit_media_action("playpause"),
+                                    _ => {}
+                                }
+                            }
+                        } else if header.dw_type == RIM_TYPEHID && payload.len() >= 9 {
+                            // Logitech G HUB sanal HID Consumer Control (Usage Page 0x0C) raporlarını çözümle
+                            // 0xB5 = Scan Next Track, 0xB6 = Scan Previous Track, 0xCD = Play/Pause, 0xB7 = Stop
+                            let raw_data = &payload[8..];
+                            for &byte in raw_data {
+                                match byte {
+                                    0xB5 => {
+                                        emit_media_action("next");
+                                        break;
+                                    }
+                                    0xB6 => {
+                                        emit_media_action("prev");
+                                        break;
+                                    }
+                                    0xCD => {
+                                        emit_media_action("playpause");
+                                        break;
+                                    }
+                                    0xB7 => {
+                                        emit_media_action("stop");
+                                        break;
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        unsafe { DefWindowProcW(hwnd, msg, w_param, l_param) }
+    }
+
+    // 1. Düşük Seviyeli Kanca + RawInput HID Consumer Control (0x0C / 0x01) + Klavye Dinleyicisi
+    // (Logitech G HUB sanal HID sürücüsünün gönderdiği 0xB5/0xB6 Next/Prev sinyallerini doğrudan donanım katmanında yakalar)
     std::thread::spawn(move || unsafe {
-        let hook = SetWindowsHookExW(WH_KEYBOARD_LL, ll_keyboard_proc, 0, 0);
-        if hook != 0 {
-            let mut msg = [0u8; 48];
-            while GetMessageW(&mut msg, 0, 0, 0) > 0 {}
+        let class_name: Vec<u16> = "MihonMediaRawInputSink\0".encode_utf16().collect();
+        let wc = WndClassW {
+            style: 0,
+            lpfn_wnd_proc: raw_input_wnd_proc,
+            cb_cls_extra: 0,
+            cb_wnd_extra: 0,
+            h_instance: 0,
+            h_icon: 0,
+            h_cursor: 0,
+            hbr_background: 0,
+            lpsz_menu_name: std::ptr::null(),
+            lpsz_class_name: class_name.as_ptr(),
+        };
+        RegisterClassW(&wc);
+        let hwnd = CreateWindowExW(
+            0,
+            class_name.as_ptr(),
+            class_name.as_ptr(),
+            0,
+            0,
+            0,
+            0,
+            0,
+            -3isize, // HWND_MESSAGE
+            0,
+            0,
+            0,
+        );
+        if hwnd != 0 {
+            let devices = [
+                // HID Consumer Control (0x0C, 0x01) — Logitech G HUB medya makrolarının gönderdiği paketler
+                RawInputDevice {
+                    us_usage_page: 0x000C,
+                    us_usage: 0x0001,
+                    dw_flags: RIDEV_INPUTSINK,
+                    hwnd_target: hwnd,
+                },
+                // HID Keyboard (0x01, 0x06)
+                RawInputDevice {
+                    us_usage_page: 0x0001,
+                    us_usage: 0x0006,
+                    dw_flags: RIDEV_INPUTSINK,
+                    hwnd_target: hwnd,
+                },
+            ];
+            RegisterRawInputDevices(
+                devices.as_ptr(),
+                devices.len() as u32,
+                std::mem::size_of::<RawInputDevice>() as u32,
+            );
+        }
+
+        let _hook = SetWindowsHookExW(WH_KEYBOARD_LL, ll_keyboard_proc, 0, 0);
+        let mut msg = [0u8; 48];
+        while GetMessageW(&mut msg, 0, 0, 0) > 0 {
+            TranslateMessage(&msg);
+            DispatchMessageW(&msg);
         }
     });
 
-    // 2. Yedek GetAsyncKeyState yoklayıcısı (Donanım HID medya tuşları için)
+    // 2. Yedek GetAsyncKeyState yoklayıcısı (Standart medya tuşları için)
     std::thread::spawn(move || {
         let mut prev_next = false;
         let mut prev_prev = false;
@@ -789,32 +1068,16 @@ fn start_windows_media_key_poller(app: AppHandle) {
                 let is_play = (GetAsyncKeyState(VK_MEDIA_PLAY_PAUSE) as u16 & 0x8000) != 0;
 
                 if is_next && !prev_next {
-                    if let Some(w) = app.get_webview_window("main") {
-                        let _ = w.eval(
-                            "window.__mihonMediaKey && window.__mihonMediaKey('next')",
-                        );
-                    }
+                    emit_media_action("next");
                 }
                 if is_prev && !prev_prev {
-                    if let Some(w) = app.get_webview_window("main") {
-                        let _ = w.eval(
-                            "window.__mihonMediaKey && window.__mihonMediaKey('prev')",
-                        );
-                    }
+                    emit_media_action("prev");
                 }
                 if is_stop && !prev_stop {
-                    if let Some(w) = app.get_webview_window("main") {
-                        let _ = w.eval(
-                            "window.__mihonMediaKey && window.__mihonMediaKey('stop')",
-                        );
-                    }
+                    emit_media_action("stop");
                 }
                 if is_play && !prev_play {
-                    if let Some(w) = app.get_webview_window("main") {
-                        let _ = w.eval(
-                            "window.__mihonMediaKey && window.__mihonMediaKey('playpause')",
-                        );
-                    }
+                    emit_media_action("playpause");
                 }
 
                 prev_next = is_next;
