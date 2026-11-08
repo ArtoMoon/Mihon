@@ -96,6 +96,14 @@ fn toggle_maximize(window: tauri::Window) {
 }
 
 #[tauri::command]
+fn toggle_fullscreen(window: tauri::Window) -> bool {
+    let is_full = window.is_fullscreen().unwrap_or(false);
+    let next = !is_full;
+    let _ = window.set_fullscreen(next);
+    next
+}
+
+#[tauri::command]
 fn close_window(window: tauri::Window) {
     let _ = window.close();
 }
@@ -1267,6 +1275,7 @@ pub fn run() {
             clear_cache,
             minimize_window,
             toggle_maximize,
+            toggle_fullscreen,
             close_window,
             import_spotify,
             recommend_similar,

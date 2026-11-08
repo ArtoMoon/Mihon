@@ -1669,11 +1669,49 @@ export default function HeliosApp() {
     if (activeView === "lyrics") {
       scrollContainer(mainLyricsContainerRef.current);
     }
+    if (isFullscreenStage) {
+      scrollContainer(fullscreenLyricsRef.current);
+    }
   }, [activeLyricIndex, activeView]);
 
   const [discoveryIdx, setDiscoveryIdx] = useState(0);
   const [artistPageIdx, setArtistPageIdx] = useState(0);
   const [isUpNextCardOpen, setIsUpNextCardOpen] = useState(true);
+  const [isFullscreenStage, setIsFullscreenStage] = useState(false);
+  const [isWindowFullscreen, setIsWindowFullscreen] = useState(false);
+  const fullscreenLyricsRef = useRef(null);
+
+  const handleToggleFullscreenMode = useCallback(async (stageOnly = false) => {
+    try {
+      if (!stageOnly) {
+        const nextWinFull = await tauriInvoke("toggle_fullscreen");
+        setIsWindowFullscreen(Boolean(nextWinFull));
+        setIsFullscreenStage(Boolean(nextWinFull));
+      } else {
+        setIsFullscreenStage((prev) => !prev);
+      }
+    } catch {
+      setIsFullscreenStage((prev) => !prev);
+    }
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "F11") {
+        e.preventDefault();
+        handleToggleFullscreenMode(false);
+      } else if (e.key === "Escape" && (isFullscreenStage || isWindowFullscreen)) {
+        setIsFullscreenStage(false);
+        if (isWindowFullscreen) {
+          tauriInvoke("toggle_fullscreen")
+            .then((v) => setIsWindowFullscreen(Boolean(v)))
+            .catch(() => setIsWindowFullscreen(false));
+        }
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [handleToggleFullscreenMode, isFullscreenStage, isWindowFullscreen]);
 
   const recentArtistPair = useMemo(() => {
     const names = [];
@@ -1684,7 +1722,7 @@ export default function HeliosApp() {
       }
       if (names.length >= 2) break;
     }
-    if (names.length === 0) return ["ADAM LAR", "SEMİCENK"];
+    if (names.length === 0) return ["ADAMLAR", "SEMİCENK"];
     if (names.length === 1) return [names[0], "FUNDA ARAR"];
     return [names[0], names[1]];
   }, [recentTracks, likedTracks]);
@@ -1696,40 +1734,40 @@ export default function HeliosApp() {
   }, [artistPageIdx]);
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden flex flex-col bg-[#080d1a] text-slate-100 select-none">
-      {/* Kozmik Aurora Arka Plan Efektleri (Synthesia Teması) */}
+    <div className="relative h-screen w-screen overflow-hidden flex flex-col bg-[#090514] text-purple-50 select-none">
+      {/* Kozmik Mor / Violet / Fuchsia Aurora Arka Plan Efektleri */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
         <div
-          className="absolute -top-36 left-1/4 w-[620px] h-[420px] rounded-full blur-[140px] opacity-30 cosmic-glow"
+          className="absolute -top-36 left-1/4 w-[650px] h-[440px] rounded-full blur-[145px] opacity-35 cosmic-glow"
           style={{
             background:
-              "radial-gradient(circle, rgba(56,189,248,0.55) 0%, rgba(139,92,246,0.35) 55%, transparent 100%)",
+              "radial-gradient(circle, rgba(168,85,247,0.65) 0%, rgba(217,70,239,0.4) 55%, transparent 100%)",
           }}
         />
         <div
-          className="absolute -bottom-36 -left-20 w-[520px] h-[520px] rounded-full blur-[130px] opacity-30"
+          className="absolute -bottom-36 -left-20 w-[540px] h-[540px] rounded-full blur-[135px] opacity-35"
           style={{
             background:
-              "radial-gradient(circle, rgba(168,85,247,0.45) 0%, rgba(45,212,191,0.35) 60%, transparent 100%)",
+              "radial-gradient(circle, rgba(139,92,246,0.55) 0%, rgba(192,38,211,0.35) 60%, transparent 100%)",
           }}
         />
         <div
-          className="absolute top-1/4 -right-24 w-[500px] h-[500px] rounded-full blur-[150px] opacity-25"
+          className="absolute top-1/4 -right-24 w-[520px] h-[520px] rounded-full blur-[150px] opacity-30"
           style={{
             background:
-              "radial-gradient(circle, rgba(34,211,238,0.5) 0%, rgba(99,102,241,0.35) 65%, transparent 100%)",
+              "radial-gradient(circle, rgba(192,132,252,0.55) 0%, rgba(124,58,237,0.4) 65%, transparent 100%)",
           }}
         />
       </div>
 
-      {/* ===== ANA 3 SÜTUNLU SYNTHESIA PENCERE DÜZENİ ===== */}
+      {/* ===== ANA 3 SÜTUNLU SYNTHESIA (MOR TEMA) PENCERE DÜZENİ ===== */}
       <div className="relative z-10 flex-1 flex min-h-0 overflow-hidden">
         {/* 1. SOL SÜTUN: SYNTHESIA KENAR ÇUBUĞU (M I H O N) */}
         {isLeftSidebarOpen ? (
-          <aside className="relative w-60 shrink-0 bg-[#0b1222]/90 border-r border-white/[0.07] backdrop-blur-2xl flex flex-col justify-between overflow-hidden">
-            {/* Sol Alt Kozmik Dalga Grafiği (Görseldeki Aurora Dalgaları) */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-56 overflow-hidden opacity-45">
-              <div className="absolute -bottom-12 -left-10 w-64 h-64 rounded-full bg-gradient-to-tr from-purple-600/40 via-cyan-400/30 to-transparent blur-2xl" />
+          <aside className="relative w-60 shrink-0 bg-[#100821]/90 border-r border-purple-400/[0.1] backdrop-blur-2xl flex flex-col justify-between overflow-hidden">
+            {/* Sol Alt Kozmik Mor Dalga Grafiği */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-56 overflow-hidden opacity-55">
+              <div className="absolute -bottom-12 -left-10 w-64 h-64 rounded-full bg-gradient-to-tr from-purple-600/50 via-fuchsia-500/35 to-transparent blur-2xl" />
               <svg
                 viewBox="0 0 240 180"
                 fill="none"
@@ -1738,22 +1776,22 @@ export default function HeliosApp() {
                 <path
                   d="M-20 180 C 30 90, 110 140, 260 40 L 260 180 Z"
                   fill="url(#mihonWave1)"
-                  fillOpacity="0.28"
+                  fillOpacity="0.32"
                 />
                 <path
                   d="M-20 180 C 60 120, 140 70, 260 110 L 260 180 Z"
                   fill="url(#mihonWave2)"
-                  fillOpacity="0.22"
+                  fillOpacity="0.26"
                 />
                 <defs>
                   <linearGradient id="mihonWave1" x1="0" y1="0" x2="240" y2="180" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="#a855f7" />
-                    <stop offset="50%" stopColor="#38bdf8" />
-                    <stop offset="100%" stopColor="#2dd4bf" />
+                    <stop offset="0%" stopColor="#c084fc" />
+                    <stop offset="50%" stopColor="#a855f7" />
+                    <stop offset="100%" stopColor="#e879f9" />
                   </linearGradient>
                   <linearGradient id="mihonWave2" x1="240" y1="0" x2="0" y2="180" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="#22d3ee" />
-                    <stop offset="100%" stopColor="#6366f1" />
+                    <stop offset="0%" stopColor="#d946ef" />
+                    <stop offset="100%" stopColor="#7c3aed" />
                   </linearGradient>
                 </defs>
               </svg>
@@ -1767,36 +1805,36 @@ export default function HeliosApp() {
               >
                 <span
                   data-tauri-drag-region
-                  className="text-lg font-light tracking-[0.34em] uppercase text-slate-100 drop-shadow-[0_0_12px_rgba(56,189,248,0.35)]"
+                  className="text-lg font-light tracking-[0.34em] uppercase text-purple-100 drop-shadow-[0_0_14px_rgba(192,132,252,0.5)]"
                 >
                   MIHON
                 </span>
                 <button
                   type="button"
                   onClick={() => setIsLeftSidebarOpen(false)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-300 hover:bg-white/[0.06] transition-colors"
+                  className="p-1.5 rounded-lg text-purple-300/70 hover:text-purple-200 hover:bg-purple-500/10 transition-colors"
                   title="Sol Menüyü Gizle"
                 >
                   <PanelLeftClose size={14} />
                 </button>
               </div>
 
-              {/* Ana Gezinme Menüsü (Parlayan Cyan Sol Çizgi ile) */}
+              {/* Ana Gezinme Menüsü (Parlayan Mor Sol Çizgi ile) */}
               <nav className="space-y-1.5">
                 <button
                   onClick={() => setActiveView("home")}
                   className={`w-full flex items-center gap-3.5 px-4 py-2.5 rounded-r-xl text-xs font-semibold tracking-[0.12em] uppercase transition-all ${
                     activeView === "home"
-                      ? "border-l-[3px] border-cyan-400 bg-gradient-to-r from-cyan-500/20 via-slate-800/70 to-slate-800/20 text-white shadow-[0_4px_20px_rgba(56,189,248,0.12)]"
-                      : "border-l-[3px] border-transparent text-slate-400 hover:text-slate-100 hover:bg-white/[0.04]"
+                      ? "border-l-[3px] border-purple-400 bg-gradient-to-r from-purple-500/25 via-purple-900/40 to-transparent text-white shadow-[0_4px_20px_rgba(168,85,247,0.18)]"
+                      : "border-l-[3px] border-transparent text-purple-200/60 hover:text-white hover:bg-purple-500/[0.06]"
                   }`}
                 >
                   <Home
                     size={16}
                     className={
                       activeView === "home"
-                        ? "text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]"
-                        : "text-slate-400"
+                        ? "text-purple-300 drop-shadow-[0_0_8px_rgba(192,132,252,0.9)]"
+                        : "text-purple-300/60"
                     }
                   />
                   <span>HOME</span>
@@ -1806,8 +1844,8 @@ export default function HeliosApp() {
                   onClick={(e) => openSimilarRecommendations(currentTrack, e)}
                   className={`w-full flex items-center justify-between px-4 py-2.5 rounded-r-xl text-xs font-semibold tracking-[0.12em] uppercase transition-all ${
                     activeView === "recommendations"
-                      ? "border-l-[3px] border-cyan-400 bg-gradient-to-r from-cyan-500/20 via-slate-800/70 to-slate-800/20 text-white shadow-[0_4px_20px_rgba(56,189,248,0.12)]"
-                      : "border-l-[3px] border-transparent text-slate-400 hover:text-slate-100 hover:bg-white/[0.04]"
+                      ? "border-l-[3px] border-purple-400 bg-gradient-to-r from-purple-500/25 via-purple-900/40 to-transparent text-white shadow-[0_4px_20px_rgba(168,85,247,0.18)]"
+                      : "border-l-[3px] border-transparent text-purple-200/60 hover:text-white hover:bg-purple-500/[0.06]"
                   }`}
                 >
                   <span className="flex items-center gap-3.5">
@@ -1815,13 +1853,13 @@ export default function HeliosApp() {
                       size={16}
                       className={
                         activeView === "recommendations"
-                          ? "text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]"
-                          : "text-slate-400"
+                          ? "text-purple-300 drop-shadow-[0_0_8px_rgba(192,132,252,0.9)]"
+                          : "text-purple-300/60"
                       }
                     />
                     <span>DISCOVER</span>
                   </span>
-                  <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+                  <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-purple-500/25 text-purple-200 border border-purple-400/40">
                     AI
                   </span>
                 </button>
@@ -1830,8 +1868,8 @@ export default function HeliosApp() {
                   onClick={() => setActiveView("liked")}
                   className={`w-full flex items-center justify-between px-4 py-2.5 rounded-r-xl text-xs font-semibold tracking-[0.12em] uppercase transition-all ${
                     activeView === "liked"
-                      ? "border-l-[3px] border-cyan-400 bg-gradient-to-r from-cyan-500/20 via-slate-800/70 to-slate-800/20 text-white shadow-[0_4px_20px_rgba(56,189,248,0.12)]"
-                      : "border-l-[3px] border-transparent text-slate-400 hover:text-slate-100 hover:bg-white/[0.04]"
+                      ? "border-l-[3px] border-purple-400 bg-gradient-to-r from-purple-500/25 via-purple-900/40 to-transparent text-white shadow-[0_4px_20px_rgba(168,85,247,0.18)]"
+                      : "border-l-[3px] border-transparent text-purple-200/60 hover:text-white hover:bg-purple-500/[0.06]"
                   }`}
                 >
                   <span className="flex items-center gap-3.5">
@@ -1839,14 +1877,14 @@ export default function HeliosApp() {
                       size={16}
                       className={
                         activeView === "liked"
-                          ? "text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]"
-                          : "text-slate-400"
+                          ? "text-purple-300 drop-shadow-[0_0_8px_rgba(192,132,252,0.9)]"
+                          : "text-purple-300/60"
                       }
                     />
                     <span>BEĞENİLENLER</span>
                   </span>
                   {likedTracks.length > 0 && (
-                    <span className="text-[10px] text-slate-400 font-bold">
+                    <span className="text-[10px] text-purple-300/70 font-bold">
                       {likedTracks.length}
                     </span>
                   )}
@@ -1856,8 +1894,8 @@ export default function HeliosApp() {
                   onClick={() => setActiveView("recent")}
                   className={`w-full flex items-center justify-between px-4 py-2.5 rounded-r-xl text-xs font-semibold tracking-[0.12em] uppercase transition-all ${
                     activeView === "recent"
-                      ? "border-l-[3px] border-cyan-400 bg-gradient-to-r from-cyan-500/20 via-slate-800/70 to-slate-800/20 text-white shadow-[0_4px_20px_rgba(56,189,248,0.12)]"
-                      : "border-l-[3px] border-transparent text-slate-400 hover:text-slate-100 hover:bg-white/[0.04]"
+                      ? "border-l-[3px] border-purple-400 bg-gradient-to-r from-purple-500/25 via-purple-900/40 to-transparent text-white shadow-[0_4px_20px_rgba(168,85,247,0.18)]"
+                      : "border-l-[3px] border-transparent text-purple-200/60 hover:text-white hover:bg-purple-500/[0.06]"
                   }`}
                 >
                   <span className="flex items-center gap-3.5">
@@ -1865,14 +1903,14 @@ export default function HeliosApp() {
                       size={16}
                       className={
                         activeView === "recent"
-                          ? "text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]"
-                          : "text-slate-400"
+                          ? "text-purple-300 drop-shadow-[0_0_8px_rgba(192,132,252,0.9)]"
+                          : "text-purple-300/60"
                       }
                     />
                     <span>GEÇMİŞ</span>
                   </span>
                   {recentTracks.length > 0 && (
-                    <span className="text-[10px] text-slate-400 font-bold">
+                    <span className="text-[10px] text-purple-300/70 font-bold">
                       {recentTracks.length}
                     </span>
                   )}
@@ -1882,8 +1920,8 @@ export default function HeliosApp() {
                   onClick={() => setActiveView("playlists")}
                   className={`w-full flex items-center justify-between px-4 py-2.5 rounded-r-xl text-xs font-semibold tracking-[0.12em] uppercase transition-all ${
                     activeView === "playlists"
-                      ? "border-l-[3px] border-cyan-400 bg-gradient-to-r from-cyan-500/20 via-slate-800/70 to-slate-800/20 text-white shadow-[0_4px_20px_rgba(56,189,248,0.12)]"
-                      : "border-l-[3px] border-transparent text-slate-400 hover:text-slate-100 hover:bg-white/[0.04]"
+                      ? "border-l-[3px] border-purple-400 bg-gradient-to-r from-purple-500/25 via-purple-900/40 to-transparent text-white shadow-[0_4px_20px_rgba(168,85,247,0.18)]"
+                      : "border-l-[3px] border-transparent text-purple-200/60 hover:text-white hover:bg-purple-500/[0.06]"
                   }`}
                 >
                   <span className="flex items-center gap-3.5">
@@ -1891,28 +1929,28 @@ export default function HeliosApp() {
                       size={16}
                       className={
                         activeView === "playlists"
-                          ? "text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]"
-                          : "text-slate-400"
+                          ? "text-purple-300 drop-shadow-[0_0_8px_rgba(192,132,252,0.9)]"
+                          : "text-purple-300/60"
                       }
                     />
                     <span>LIBRARY</span>
                   </span>
-                  <span className="text-[10px] text-slate-400 font-bold">
+                  <span className="text-[10px] text-purple-300/70 font-bold">
                     {customPlaylists.length}
                   </span>
                 </button>
               </nav>
 
-              {/* PLAYLISTS Bölümü (Görseldeki İkonlu Liste Yapısı) */}
-              <div className="mt-6 pt-5 border-t border-white/[0.07] flex-1 flex flex-col min-h-0">
+              {/* PLAYLISTS Bölümü */}
+              <div className="mt-6 pt-5 border-t border-purple-400/[0.1] flex-1 flex flex-col min-h-0">
                 <div className="flex items-center justify-between px-2 mb-3">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-purple-300/70">
                     PLAYLISTS
                   </span>
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => setIsSpotifyModalOpen(true)}
-                      className="flex items-center gap-1 text-[10px] font-bold text-emerald-300 hover:text-white px-2 py-0.5 rounded-md bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 transition-colors"
+                      className="flex items-center gap-1 text-[10px] font-bold text-purple-200 hover:text-white px-2 py-0.5 rounded-md bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/35 transition-colors"
                       title="Spotify Listelerimi Aktar"
                     >
                       <Disc3 size={11} />
@@ -1924,7 +1962,7 @@ export default function HeliosApp() {
                         setNewPlaylistName("");
                         setIsCreateModalOpen(true);
                       }}
-                      className="p-1 rounded-md text-cyan-300 hover:text-white bg-cyan-500/10 hover:bg-cyan-500/25 border border-cyan-400/25 transition-colors"
+                      className="p-1 rounded-md text-purple-300 hover:text-white bg-purple-500/15 hover:bg-purple-500/30 border border-purple-400/30 transition-colors"
                       title="Yeni Çalma Listesi Oluştur"
                     >
                       <Plus size={13} />
@@ -1940,9 +1978,9 @@ export default function HeliosApp() {
                         setNewPlaylistName("");
                         setIsCreateModalOpen(true);
                       }}
-                      className="w-full p-3 rounded-xl border border-dashed border-white/10 hover:border-cyan-400/40 text-left transition-colors group"
+                      className="w-full p-3 rounded-xl border border-dashed border-purple-400/20 hover:border-purple-400/50 text-left transition-colors group"
                     >
-                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-300 group-hover:text-cyan-300">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-purple-200 group-hover:text-purple-300">
                         <FolderPlus size={14} />
                         <span>İlk Listeni Oluştur</span>
                       </div>
@@ -1962,27 +2000,27 @@ export default function HeliosApp() {
                           }}
                           className={`group flex items-center gap-3 px-2.5 py-2 rounded-xl cursor-pointer transition-all ${
                             isSelected
-                              ? "bg-cyan-500/15 text-white border border-cyan-400/30"
-                              : "hover:bg-white/[0.05] text-slate-300 border border-transparent"
+                              ? "bg-purple-500/20 text-white border border-purple-400/40"
+                              : "hover:bg-purple-500/[0.08] text-purple-100/80 border border-transparent"
                           }`}
                         >
                           <PlaylistIcon
                             size={15}
                             className={
                               isSelected
-                                ? "text-cyan-400 shrink-0"
-                                : "text-slate-400 group-hover:text-cyan-300 shrink-0"
+                                ? "text-purple-300 shrink-0"
+                                : "text-purple-300/60 group-hover:text-purple-300 shrink-0"
                             }
                           />
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-medium truncate">{pl.name}</p>
-                            <p className="text-[10px] text-slate-500">
+                            <p className="text-[10px] text-purple-300/50">
                               {pl.tracks.length} parça
                             </p>
                           </div>
                           <button
                             onClick={(e) => handleDeletePlaylist(pl.id, e)}
-                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-purple-300/50 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
                             title="Listeyi Sil"
                           >
                             <Trash2 size={12} />
@@ -1995,16 +2033,16 @@ export default function HeliosApp() {
               </div>
 
               {/* Alt Önbellek (350 MB Akıllı LRU) Kartı */}
-              <div className="mt-3 p-2.5 rounded-xl bg-[#0f172a]/80 border border-white/[0.07] backdrop-blur-xl flex items-center justify-between">
+              <div className="mt-3 p-2.5 rounded-xl bg-[#160b2e]/85 border border-purple-400/15 backdrop-blur-xl flex items-center justify-between">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-7 h-7 rounded-lg bg-cyan-500/15 border border-cyan-400/30 flex items-center justify-center text-cyan-300 shrink-0">
+                  <div className="w-7 h-7 rounded-lg bg-purple-500/20 border border-purple-400/35 flex items-center justify-center text-purple-300 shrink-0">
                     <HardDrive size={14} />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[11px] font-semibold text-slate-200 truncate">
+                    <p className="text-[11px] font-semibold text-purple-100 truncate">
                       {formatBytes(cacheStats.bytes)} Önbellek
                     </p>
-                    <p className="text-[10px] text-slate-400">
+                    <p className="text-[10px] text-purple-300/60">
                       {cacheStats.files} şarkı hazır
                     </p>
                   </div>
@@ -2020,7 +2058,7 @@ export default function HeliosApp() {
                         showToast(String(e), true);
                       }
                     }}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                    className="p-1.5 rounded-lg text-purple-300/60 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
                     title="Önbelleği Temizle"
                   >
                     <Trash2 size={13} />
@@ -2033,7 +2071,7 @@ export default function HeliosApp() {
           <button
             type="button"
             onClick={() => setIsLeftSidebarOpen(true)}
-            className="w-8 shrink-0 bg-[#0b1222]/90 hover:bg-[#111c35] border-r border-white/[0.07] flex flex-col items-center justify-center gap-2 text-slate-400 hover:text-cyan-300 transition-all group"
+            className="w-8 shrink-0 bg-[#100821]/90 hover:bg-[#190d33] border-r border-purple-400/10 flex flex-col items-center justify-center gap-2 text-purple-300/70 hover:text-purple-200 transition-all group"
             title="Sol Menüyü Aç"
           >
             <PanelLeftOpen size={15} />
@@ -2042,10 +2080,10 @@ export default function HeliosApp() {
 
         {/* 2. ORTA + SAĞ ALAN (Üst Pencere/Arama Çubuğu + İçerik + Sağ NOW PLAYING) */}
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
-          {/* ÜST ÇUBUK (Görseldeki `< >` Oklar + Arama Çubuğu + Sağ Aksiyonlar & Pencere Kontrolleri) */}
+          {/* ÜST ÇUBUK (`< >` Oklar + Arama Çubuğu + Tam Ekran Modu + Pencere Kontrolleri) */}
           <header
             data-tauri-drag-region
-            className="h-14 px-6 flex items-center justify-between border-b border-white/[0.06] bg-[#0b1222]/60 backdrop-blur-2xl shrink-0"
+            className="h-14 px-6 flex items-center justify-between border-b border-purple-400/[0.08] bg-[#100821]/65 backdrop-blur-2xl shrink-0"
           >
             {/* Sol: Geri / İleri Okları + Arama Kutusu */}
             <div data-tauri-drag-region className="flex items-center gap-2.5 flex-1 max-w-xl">
@@ -2053,7 +2091,7 @@ export default function HeliosApp() {
                 <button
                   type="button"
                   onClick={() => setActiveView("home")}
-                  className="w-7 h-7 rounded-lg bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.07] flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                  className="w-7 h-7 rounded-lg bg-purple-500/[0.07] hover:bg-purple-500/15 border border-purple-400/15 flex items-center justify-center text-purple-200/70 hover:text-white transition-colors"
                   title="Ana Sayfa"
                 >
                   <ChevronLeft size={14} />
@@ -2061,7 +2099,7 @@ export default function HeliosApp() {
                 <button
                   type="button"
                   onClick={(e) => openSimilarRecommendations(currentTrack, e)}
-                  className="w-7 h-7 rounded-lg bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.07] flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                  className="w-7 h-7 rounded-lg bg-purple-500/[0.07] hover:bg-purple-500/15 border border-purple-400/15 flex items-center justify-center text-purple-200/70 hover:text-white transition-colors"
                   title="AI Keşif"
                 >
                   <ChevronRight size={14} />
@@ -2079,22 +2117,22 @@ export default function HeliosApp() {
                     "YouTube Music anlık arama sonuçları"
                   );
                 }}
-                className="flex items-center gap-2.5 w-full max-w-sm px-3.5 py-1.5 rounded-xl bg-[#141e33]/90 hover:bg-[#19253f] focus-within:bg-[#16223b] focus-within:ring-1 focus-within:ring-cyan-400/60 border border-white/[0.08] transition-all"
+                className="flex items-center gap-2.5 w-full max-w-sm px-3.5 py-1.5 rounded-xl bg-[#190f32]/90 hover:bg-[#211342] focus-within:bg-[#1d113a] focus-within:ring-1 focus-within:ring-purple-400/60 border border-purple-400/15 transition-all"
               >
-                <Search size={14} className="text-slate-400 shrink-0" />
+                <Search size={14} className="text-purple-300/70 shrink-0" />
                 <input
                   ref={searchInputRef}
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search / Şarkı veya sanatçı ara..."
-                  className="w-full bg-transparent text-xs text-slate-100 placeholder:text-slate-400 focus:outline-none"
+                  className="w-full bg-transparent text-xs text-purple-50 placeholder:text-purple-300/50 focus:outline-none"
                 />
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => setSearchQuery("")}
-                    className="text-slate-400 hover:text-white"
+                    className="text-purple-300/60 hover:text-white"
                   >
                     <X size={13} />
                   </button>
@@ -2102,8 +2140,26 @@ export default function HeliosApp() {
               </form>
             </div>
 
-            {/* Sağ: Lyrics, Discord RPC, Güncelleme, Profil ve Pencere Kontrolleri */}
+            {/* Sağ: Tam Ekran Modu, Sözler, Discord RPC, Güncelleme, Profil ve Pencere Kontrolleri */}
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleToggleFullscreenMode(false)}
+                className={`flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all ${
+                  isFullscreenStage || isWindowFullscreen
+                    ? "bg-purple-500/30 text-purple-100 border-purple-400/60 shadow-[0_0_16px_rgba(168,85,247,0.4)]"
+                    : "bg-purple-500/10 text-purple-200 border-purple-400/25 hover:bg-purple-500/20"
+                }`}
+                title="Tam Ekran Modu (F11)"
+              >
+                {isFullscreenStage || isWindowFullscreen ? (
+                  <Minimize2 size={13} className="text-purple-300" />
+                ) : (
+                  <Maximize2 size={13} className="text-purple-300" />
+                )}
+                <span className="hidden sm:inline">Tam Ekran</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() =>
@@ -2111,8 +2167,8 @@ export default function HeliosApp() {
                 }
                 className={`flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all ${
                   activeView === "lyrics"
-                    ? "bg-cyan-500/20 text-cyan-300 border-cyan-400/50 shadow-[0_0_12px_rgba(34,211,238,0.25)]"
-                    : "bg-white/[0.04] text-slate-300 border-white/10 hover:bg-white/[0.08]"
+                    ? "bg-purple-500/25 text-purple-200 border-purple-400/50 shadow-[0_0_12px_rgba(168,85,247,0.35)]"
+                    : "bg-white/[0.04] text-purple-200/80 border-white/10 hover:bg-purple-500/15"
                 }`}
                 title="Canlı Şarkı Sözleri"
               >
@@ -2133,17 +2189,17 @@ export default function HeliosApp() {
                 }}
                 className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all ${
                   discordEnabled
-                    ? "bg-indigo-500/15 text-indigo-200 border-indigo-400/35"
-                    : "bg-white/[0.04] text-slate-500 border-white/10"
+                    ? "bg-purple-500/15 text-purple-200 border-purple-400/35"
+                    : "bg-white/[0.04] text-purple-300/40 border-white/10"
                 }`}
                 title="Discord Rich Presence Durumu"
               >
                 <span
                   className={`w-1.5 h-1.5 rounded-full ${
                     discordEnabled && discordConnected
-                      ? "bg-emerald-400 animate-pulse"
+                      ? "bg-fuchsia-400 animate-pulse"
                       : discordEnabled
-                      ? "bg-indigo-400"
+                      ? "bg-purple-400"
                       : "bg-slate-600"
                   }`}
                 />
@@ -2156,15 +2212,15 @@ export default function HeliosApp() {
                 disabled={isCheckingUpdate || isInstallingUpdate}
                 className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all ${
                   updateInfo?.has_update
-                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 animate-pulse"
-                    : "bg-white/[0.04] text-slate-300 hover:text-white border-white/10"
+                    ? "bg-fuchsia-500/25 text-fuchsia-200 border-fuchsia-400/50 animate-pulse"
+                    : "bg-white/[0.04] text-purple-200/80 hover:text-white border-white/10"
                 }`}
                 title="GitHub Güncelleme Kontrolü"
               >
                 {isCheckingUpdate || isInstallingUpdate ? (
-                  <Loader2 size={11} className="animate-spin text-cyan-400" />
+                  <Loader2 size={11} className="animate-spin text-purple-400" />
                 ) : (
-                  <Zap size={11} className="text-cyan-400" />
+                  <Zap size={11} className="text-purple-400" />
                 )}
                 <span className="hidden xl:inline">
                   {isInstallingUpdate
@@ -2175,14 +2231,14 @@ export default function HeliosApp() {
                 </span>
               </button>
 
-              {/* Profil Rozeti (Görseldeki Sağ Üst Kullanıcı Alanı) */}
-              <div className="hidden sm:flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08]">
+              {/* Profil Rozeti */}
+              <div className="hidden sm:flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-400/20">
                 <img
                   src="/mihon-logo.jpg"
                   alt="Mihon"
-                  className="w-5 h-5 rounded-full object-cover border border-cyan-400/40"
+                  className="w-5 h-5 rounded-full object-cover border border-purple-400/50"
                 />
-                <span className="text-xs font-medium text-slate-200">Mihon</span>
+                <span className="text-xs font-medium text-purple-100">Mihon</span>
               </div>
 
               <button
@@ -2190,8 +2246,8 @@ export default function HeliosApp() {
                 onClick={() => setIsRightSidebarOpen((v) => !v)}
                 className={`w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${
                   isRightSidebarOpen
-                    ? "bg-white/[0.05] text-slate-200 border-white/10 hover:bg-white/10"
-                    : "bg-cyan-500/20 text-cyan-300 border-cyan-400/40"
+                    ? "bg-white/[0.05] text-purple-200 border-white/10 hover:bg-purple-500/15"
+                    : "bg-purple-500/25 text-purple-200 border-purple-400/40"
                 }`}
                 title={isRightSidebarOpen ? "Now Playing Panelini Gizle" : "Now Playing Panelini Aç"}
               >
@@ -2202,24 +2258,24 @@ export default function HeliosApp() {
                 )}
               </button>
 
-              <div className="flex items-center gap-0.5 pl-1 border-l border-white/[0.08]">
+              <div className="flex items-center gap-0.5 pl-1 border-l border-purple-400/15">
                 <button
                   onClick={() => tauriInvoke("minimize_window").catch(() => {})}
-                  className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                  className="w-7 h-7 rounded-lg hover:bg-purple-500/15 flex items-center justify-center text-purple-300/70 hover:text-white transition-colors"
                   title="Küçült"
                 >
                   <Minus size={13} />
                 </button>
                 <button
                   onClick={() => tauriInvoke("toggle_maximize").catch(() => {})}
-                  className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
-                  title="Büyüt"
+                  className="w-7 h-7 rounded-lg hover:bg-purple-500/15 flex items-center justify-center text-purple-300/70 hover:text-white transition-colors"
+                  title="Pencereyi Büyüt"
                 >
                   <Square size={11} />
                 </button>
                 <button
                   onClick={() => tauriInvoke("close_window").catch(() => {})}
-                  className="w-7 h-7 rounded-lg hover:bg-rose-600 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                  className="w-7 h-7 rounded-lg hover:bg-rose-600 flex items-center justify-center text-purple-300/70 hover:text-white transition-colors"
                   title="Kapat"
                 >
                   <X size={14} />
@@ -2237,22 +2293,22 @@ export default function HeliosApp() {
             >
               {/* SANATÇI ÖZEL SAYFASI */}
               {activeView === "artist" && (
-                <section className="relative overflow-hidden rounded-2xl border border-cyan-400/25 bg-gradient-to-br from-[#13203d] via-[#10182b] to-[#1a1438] p-6 shadow-2xl">
+                <section className="relative overflow-hidden rounded-2xl border border-purple-400/30 bg-gradient-to-br from-[#231145] via-[#150b2b] to-[#2c124d] p-6 shadow-2xl">
                   <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
                     <div className="flex items-center gap-4">
                       <TrackArtwork
                         track={artistTracks[0]}
-                        className="w-20 h-20 rounded-2xl shadow-[0_0_30px_rgba(56,189,248,0.25)] border border-cyan-400/40"
+                        className="w-20 h-20 rounded-2xl shadow-[0_0_30px_rgba(168,85,247,0.35)] border border-purple-400/50"
                         iconSize={32}
                       />
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-widest bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-widest bg-purple-500/25 text-purple-200 border border-purple-400/40">
                             FEATURED ARTIST
                           </span>
                           <button
                             onClick={() => setActiveView("home")}
-                            className="text-xs font-semibold text-slate-400 hover:text-cyan-300 underline"
+                            className="text-xs font-semibold text-purple-300/80 hover:text-purple-200 underline"
                           >
                             ← Ana Sayfaya Dön
                           </button>
@@ -2260,7 +2316,7 @@ export default function HeliosApp() {
                         <h1 className="text-3xl font-black tracking-wide uppercase text-white mt-1">
                           {selectedArtistName}
                         </h1>
-                        <p className="text-xs text-slate-300 mt-0.5">
+                        <p className="text-xs text-purple-200/80 mt-0.5">
                           {isLoadingArtist
                             ? "Sanatçının popüler parçaları yükleniyor..."
                             : `${artistTracks.length} popüler parça • Anında çalmaya hazır`}
@@ -2273,27 +2329,27 @@ export default function HeliosApp() {
 
               {/* AI ÖNERİ SAYFASI */}
               {activeView === "recommendations" && (
-                <section className="relative overflow-hidden rounded-2xl border border-cyan-400/25 bg-gradient-to-r from-[#13203d] via-[#151d36] to-[#231942] px-5 py-4 shadow-xl">
+                <section className="relative overflow-hidden rounded-2xl border border-purple-400/30 bg-gradient-to-r from-[#231145] via-[#180d33] to-[#311354] px-5 py-4 shadow-xl">
                   <div className="relative z-10 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3.5 min-w-0 flex-1">
                       <TrackArtwork
                         track={recommendationMeta?.seedTrack || recommendedTracks[0]}
-                        className="w-14 h-14 rounded-xl shadow-lg border border-cyan-400/40 shrink-0"
+                        className="w-14 h-14 rounded-xl shadow-lg border border-purple-400/45 shrink-0"
                         iconSize={24}
                       />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shrink-0">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider bg-purple-500/25 text-purple-200 border border-purple-400/40 shrink-0">
                             AI DISCOVERY RADIO
                           </span>
-                          <span className="text-xs font-semibold text-cyan-300 truncate">
+                          <span className="text-xs font-semibold text-fuchsia-300 truncate">
                             {recommendationMeta?.detected_genre}
                           </span>
                         </div>
                         <h1 className="text-lg font-extrabold tracking-tight text-white truncate mt-1">
                           “{recommendationMeta?.seed_title || "Seçili Şarkı"}” Benzerleri
                         </h1>
-                        <p className="text-xs text-slate-400 truncate">
+                        <p className="text-xs text-purple-200/70 truncate">
                           {recommendationMeta?.algorithm_summary}
                         </p>
                       </div>
@@ -2311,7 +2367,7 @@ export default function HeliosApp() {
                             showToast("Yeni benzer şarkılar ekleniyor...");
                             await extendQueueWithSimilar(seed, recommendedTracks);
                           }}
-                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-gradient-to-r from-cyan-400 to-indigo-500 text-slate-950 text-xs font-extrabold shadow-lg shadow-cyan-500/25 transition-all whitespace-nowrap"
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white text-xs font-extrabold shadow-lg shadow-purple-500/30 transition-all whitespace-nowrap"
                         >
                           <Sparkles size={14} />
                           <span>+ Daha Fazla Ekle</span>
@@ -2332,9 +2388,9 @@ export default function HeliosApp() {
                             saveCustomPlaylists([created, ...customPlaylists]);
                             showToast(`“${plName}” çalma listelerine kaydedildi!`);
                           }}
-                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/15 transition-all whitespace-nowrap"
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-purple-500/15 hover:bg-purple-500/25 text-white text-xs font-bold border border-purple-400/25 transition-all whitespace-nowrap"
                         >
-                          <FolderPlus size={14} className="text-cyan-300" />
+                          <FolderPlus size={14} className="text-purple-300" />
                           <span>Listeye Kaydet</span>
                         </button>
                       </div>
@@ -2346,24 +2402,24 @@ export default function HeliosApp() {
               {/* ===== HOME: SYNTHESIA AI DISCOVERY + EXPLORE NEW GENRES + FEATURED ARTISTS ===== */}
               {activeView === "home" && (
                 <>
-                  {/* 1. AI DISCOVERY HERO CARD (Görseldeki Kozmik Halka Kartı) */}
+                  {/* 1. AI DISCOVERY HERO CARD (Kozmik Mor/Fuchsia Halka Kartı) */}
                   <section>
                     <h2 className="text-lg font-medium uppercase tracking-[0.14em] text-white mb-3">
                       AI DISCOVERY
                     </h2>
 
-                    <div className="relative overflow-hidden rounded-2xl border border-cyan-300/25 bg-gradient-to-r from-[#131c31] via-[#192340] to-[#231d4c] p-4 sm:p-5 shadow-[0_16px_45px_rgba(0,0,0,0.5)]">
-                      {/* Sağ Aurora Işık Dalgaları */}
+                    <div className="relative overflow-hidden rounded-2xl border border-purple-400/35 bg-gradient-to-r from-[#170d30] via-[#221247] to-[#32155c] p-4 sm:p-5 shadow-[0_16px_45px_rgba(0,0,0,0.55)]">
+                      {/* Sağ Mor/Fuchsia Aurora Işık Dalgaları */}
                       <div
-                        className="pointer-events-none absolute -right-10 -bottom-12 w-80 h-56 rounded-full blur-2xl opacity-75"
+                        className="pointer-events-none absolute -right-10 -bottom-12 w-80 h-56 rounded-full blur-2xl opacity-80"
                         style={{
                           background:
-                            "radial-gradient(circle at 70% 70%, #2dd4bf 0%, #38bdf8 38%, #a855f7 72%, transparent 100%)",
+                            "radial-gradient(circle at 70% 70%, #e879f9 0%, #a855f7 42%, #6366f1 75%, transparent 100%)",
                         }}
                       />
 
                       <div className="relative z-10 flex flex-col sm:flex-row items-center gap-5">
-                        {/* Sol: Kozmik Neon Halkalı Kapak Görseli */}
+                        {/* Sol: Kozmik Mor Neon Halkalı Kapak Görseli */}
                         <div
                           onClick={() => {
                             setActiveCollection(activeSlide);
@@ -2373,7 +2429,7 @@ export default function HeliosApp() {
                               activeSlide.subtitle
                             );
                           }}
-                          className="relative w-36 h-36 sm:w-40 sm:h-40 rounded-xl overflow-hidden bg-[#090d1a] border border-white/15 shrink-0 cursor-pointer group shadow-[0_0_35px_rgba(56,189,248,0.25)]"
+                          className="relative w-36 h-36 sm:w-40 sm:h-40 rounded-xl overflow-hidden bg-[#0c061a] border border-purple-300/25 shrink-0 cursor-pointer group shadow-[0_0_35px_rgba(168,85,247,0.35)]"
                         >
                           <img
                             src={
@@ -2385,11 +2441,11 @@ export default function HeliosApp() {
                             referrerPolicy="no-referrer"
                             className="w-full h-full object-cover opacity-75 group-hover:scale-105 transition-transform duration-500"
                           />
-                          <div className="absolute inset-0 bg-gradient-to-tr from-[#090d1a]/70 via-transparent to-cyan-500/20" />
-                          {/* Kozmik Gezegen & Neon Halka Efekti */}
+                          <div className="absolute inset-0 bg-gradient-to-tr from-[#0c061a]/75 via-transparent to-purple-500/25" />
+                          {/* Kozmik Gezegen & Mor/Fuchsia Halka Efekti */}
                           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                            <div className="w-20 h-20 rounded-full bg-black/50 backdrop-blur-[2px] border border-cyan-300/60 shadow-[0_0_25px_rgba(56,189,248,0.7),inset_0_0_18px_rgba(217,70,239,0.6)]" />
-                            <div className="absolute w-32 h-9 rounded-full border border-fuchsia-400/60 -rotate-12 shadow-[0_0_15px_rgba(232,121,249,0.6)]" />
+                            <div className="w-20 h-20 rounded-full bg-black/55 backdrop-blur-[2px] border border-purple-300/70 shadow-[0_0_25px_rgba(192,132,252,0.8),inset_0_0_18px_rgba(232,121,249,0.7)]" />
+                            <div className="absolute w-32 h-9 rounded-full border border-fuchsia-400/70 -rotate-12 shadow-[0_0_18px_rgba(232,121,249,0.75)]" />
                           </div>
                         </div>
 
@@ -2397,7 +2453,7 @@ export default function HeliosApp() {
                         <div className="flex-1 min-w-0 w-full flex flex-col justify-between">
                           <div className="flex items-start justify-between gap-2">
                             <div>
-                              <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-300">
+                              <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-purple-200/80">
                                 {activeSlide.badge || "SMART PLAYLIST"}
                               </span>
                               <h3 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-[0.08em] text-white mt-1 drop-shadow">
@@ -2413,19 +2469,19 @@ export default function HeliosApp() {
                                   e
                                 )
                               }
-                              className="p-2 rounded-lg text-slate-300 hover:text-cyan-300 hover:bg-white/10 transition-colors"
+                              className="p-2 rounded-lg text-purple-200/80 hover:text-purple-200 hover:bg-purple-500/15 transition-colors"
                               title="AI Radyo Başlat"
                             >
                               <Bookmark size={16} />
                             </button>
                           </div>
 
-                          <p className="text-xs sm:text-sm text-slate-300/90 mt-2 leading-relaxed max-w-md">
+                          <p className="text-xs sm:text-sm text-purple-100/85 mt-2 leading-relaxed max-w-md">
                             Son dinlediğin{" "}
                             <button
                               type="button"
                               onClick={(e) => openArtistPage(recentArtistPair[0], e)}
-                              className="font-extrabold text-white hover:text-cyan-300 uppercase tracking-wide"
+                              className="font-extrabold text-white hover:text-purple-300 uppercase tracking-wide"
                             >
                               {recentArtistPair[0]}
                             </button>{" "}
@@ -2433,7 +2489,7 @@ export default function HeliosApp() {
                             <button
                               type="button"
                               onClick={(e) => openArtistPage(recentArtistPair[1], e)}
-                              className="font-extrabold text-white hover:text-cyan-300 uppercase tracking-wide"
+                              className="font-extrabold text-white hover:text-purple-300 uppercase tracking-wide"
                             >
                               {recentArtistPair[1]}
                             </button>{" "}
@@ -2454,7 +2510,7 @@ export default function HeliosApp() {
                                   );
                                 }
                               }}
-                              className="w-10 h-10 rounded-full bg-gradient-to-br from-white via-indigo-100 to-indigo-300 hover:scale-105 active:scale-95 text-slate-950 flex items-center justify-center shadow-[0_0_24px_rgba(165,180,252,0.75)] transition-all"
+                              className="w-10 h-10 rounded-full bg-gradient-to-br from-white via-purple-200 to-fuchsia-300 hover:scale-105 active:scale-95 text-[#120726] flex items-center justify-center shadow-[0_0_24px_rgba(192,132,252,0.85)] transition-all"
                               title="Akıllı Listeyi Oynat"
                             >
                               <Play size={17} className="fill-current ml-0.5" />
@@ -2468,9 +2524,9 @@ export default function HeliosApp() {
                                   e
                                 )
                               }
-                              className="px-3.5 py-1.5 rounded-full text-[11px] font-bold bg-white/10 hover:bg-white/20 text-white border border-white/15 backdrop-blur-md flex items-center gap-1.5 transition-all"
+                              className="px-3.5 py-1.5 rounded-full text-[11px] font-bold bg-purple-500/20 hover:bg-purple-500/30 text-white border border-purple-300/25 backdrop-blur-md flex items-center gap-1.5 transition-all"
                             >
-                              <Sparkles size={13} className="text-cyan-300" />
+                              <Sparkles size={13} className="text-fuchsia-300" />
                               <span>AI Benzerlerini Üret</span>
                             </button>
                           </div>
@@ -2493,8 +2549,8 @@ export default function HeliosApp() {
                             }}
                             className={`h-1.5 rounded-full transition-all ${
                               isActiveDot
-                                ? "w-6 bg-slate-200 shadow-[0_0_8px_rgba(255,255,255,0.8)]"
-                                : "w-1.5 bg-slate-600 hover:bg-slate-400"
+                                ? "w-6 bg-purple-300 shadow-[0_0_10px_rgba(192,132,252,0.9)]"
+                                : "w-1.5 bg-purple-900 hover:bg-purple-500"
                             }`}
                             title={col.subtitle}
                           />
@@ -2503,9 +2559,9 @@ export default function HeliosApp() {
                     </div>
                   </section>
 
-                  {/* 2. EXPLORE NEW GENRES (Görseldeki Parlayan Neon Çerçeveli Tür Hapları) */}
+                  {/* 2. EXPLORE NEW GENRES */}
                   <section>
-                    <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-slate-200 mb-3">
+                    <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-purple-100 mb-3">
                       EXPLORE NEW GENRES
                     </h3>
                     <div className="flex items-center gap-2.5 overflow-x-auto pb-1 no-scrollbar">
@@ -2528,10 +2584,10 @@ export default function HeliosApp() {
                     </div>
                   </section>
 
-                  {/* 3. FEATURED ARTISTS (Görseldeki 2x2 Yatay Sanatçı Kartları) */}
+                  {/* 3. FEATURED ARTISTS (2x2 Yatay Sanatçı Kartları - Mor Tema) */}
                   <section>
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-slate-200">
+                      <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-purple-100">
                         FEATURED ARTISTS
                       </h3>
                       <div className="flex items-center gap-1">
@@ -2540,7 +2596,7 @@ export default function HeliosApp() {
                           onClick={() =>
                             setArtistPageIdx((p) => (p === 0 ? 1 : 0))
                           }
-                          className="w-6 h-6 rounded-lg bg-white/[0.04] hover:bg-white/[0.1] border border-white/[0.07] flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                          className="w-6 h-6 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-400/15 flex items-center justify-center text-purple-200/70 hover:text-white transition-colors"
                           title="Önceki Sanatçılar"
                         >
                           <ChevronLeft size={13} />
@@ -2550,7 +2606,7 @@ export default function HeliosApp() {
                           onClick={() =>
                             setArtistPageIdx((p) => (p === 0 ? 1 : 0))
                           }
-                          className="w-6 h-6 rounded-lg bg-white/[0.04] hover:bg-white/[0.1] border border-white/[0.07] flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                          className="w-6 h-6 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-400/15 flex items-center justify-center text-purple-200/70 hover:text-white transition-colors"
                           title="Sonraki Sanatçılar"
                         >
                           <ChevronRight size={13} />
@@ -2563,20 +2619,20 @@ export default function HeliosApp() {
                         <div
                           key={art.name}
                           onClick={(e) => openArtistPage(art.name, e)}
-                          className="group flex items-center justify-between p-3 rounded-2xl bg-[#141e33]/85 hover:bg-[#1a2742] border border-white/[0.07] hover:border-cyan-400/35 cursor-pointer transition-all shadow-lg"
+                          className="group flex items-center justify-between p-3 rounded-2xl bg-[#170d30]/85 hover:bg-[#221345] border border-purple-400/15 hover:border-purple-400/45 cursor-pointer transition-all shadow-lg"
                         >
                           <div className="flex items-center gap-3.5 min-w-0">
                             <img
                               src={art.avatar}
                               alt={art.name}
                               referrerPolicy="no-referrer"
-                              className="w-12 h-12 rounded-xl object-cover border border-white/10 shrink-0"
+                              className="w-12 h-12 rounded-xl object-cover border border-purple-300/20 shrink-0"
                             />
                             <div className="min-w-0">
                               <p className="text-sm font-bold uppercase tracking-wider text-white truncate">
                                 {art.name}
                               </p>
-                              <p className="text-[11px] font-medium uppercase tracking-widest text-slate-400 truncate mt-0.5">
+                              <p className="text-[11px] font-medium uppercase tracking-widest text-purple-300/70 truncate mt-0.5">
                                 {art.sub}
                               </p>
                             </div>
@@ -2585,7 +2641,7 @@ export default function HeliosApp() {
                           <button
                             type="button"
                             onClick={(e) => openArtistPage(art.name, e)}
-                            className="w-8 h-8 rounded-full bg-white/15 group-hover:bg-cyan-400 text-slate-200 group-hover:text-slate-950 flex items-center justify-center transition-all shrink-0 shadow"
+                            className="w-8 h-8 rounded-full bg-purple-500/20 group-hover:bg-purple-400 text-purple-100 group-hover:text-[#120726] flex items-center justify-center transition-all shrink-0 shadow"
                           >
                             <Play size={14} className="fill-current ml-0.5" />
                           </button>
@@ -2601,7 +2657,7 @@ export default function HeliosApp() {
                 <section className="space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-cyan-400">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-purple-300">
                         LIBRARY
                       </span>
                       <h1 className="text-2xl font-extrabold text-white">
@@ -2622,7 +2678,7 @@ export default function HeliosApp() {
                           setNewPlaylistName("");
                           setIsCreateModalOpen(true);
                         }}
-                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-cyan-400 to-indigo-500 text-slate-950 text-xs font-extrabold shadow-lg shadow-cyan-500/25 transition-all"
+                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white text-xs font-extrabold shadow-lg shadow-purple-500/30 transition-all"
                       >
                         <Plus size={15} />
                         <span>Yeni Liste Oluştur</span>
@@ -2631,17 +2687,17 @@ export default function HeliosApp() {
                   </div>
 
                   {customPlaylists.length === 0 ? (
-                    <div className="py-16 text-center rounded-2xl bg-white/[0.02] border border-dashed border-white/10">
-                      <ListMusic size={40} className="mx-auto text-cyan-400 mb-3" />
+                    <div className="py-16 text-center rounded-2xl bg-purple-500/[0.04] border border-dashed border-purple-400/20">
+                      <ListMusic size={40} className="mx-auto text-purple-400 mb-3" />
                       <h3 className="text-base font-bold text-white">
                         Henüz hiç çalma listen yok
                       </h3>
-                      <p className="text-xs text-slate-400 mt-1 mb-4">
+                      <p className="text-xs text-purple-200/70 mt-1 mb-4">
                         Yeni bir liste oluşturup beğendiğin şarkıları içine atabilirsin.
                       </p>
                       <button
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="px-5 py-2.5 rounded-full bg-cyan-400 text-slate-950 text-xs font-extrabold"
+                        className="px-5 py-2.5 rounded-full bg-purple-500 text-white text-xs font-extrabold"
                       >
                         + İlk Listeni Oluştur
                       </button>
@@ -2655,7 +2711,7 @@ export default function HeliosApp() {
                             setSelectedPlaylistId(pl.id);
                             setActiveView("playlist-detail");
                           }}
-                          className="group p-4 rounded-2xl bg-[#141e33]/75 hover:bg-[#1a2742] border border-white/[0.07] hover:border-cyan-400/30 cursor-pointer transition-all"
+                          className="group p-4 rounded-2xl bg-[#170d30]/80 hover:bg-[#221345] border border-purple-400/15 hover:border-purple-400/45 cursor-pointer transition-all"
                         >
                           <div className="relative aspect-square mb-3">
                             <TrackArtwork
@@ -2677,7 +2733,7 @@ export default function HeliosApp() {
                                 e.stopPropagation();
                                 if (pl.tracks.length > 0) playTrackAtIndex(pl.tracks, 0);
                               }}
-                              className="absolute right-2.5 bottom-2.5 w-10 h-10 rounded-full bg-cyan-400 text-slate-950 flex items-center justify-center shadow-xl opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all"
+                              className="absolute right-2.5 bottom-2.5 w-10 h-10 rounded-full bg-purple-400 text-[#120726] flex items-center justify-center shadow-xl opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all"
                             >
                               <Play size={18} className="fill-current ml-0.5" />
                             </button>
@@ -2685,7 +2741,7 @@ export default function HeliosApp() {
                           <h3 className="font-bold text-sm text-white truncate">
                             {pl.name}
                           </h3>
-                          <p className="text-xs text-slate-400 mt-0.5">
+                          <p className="text-xs text-purple-300/60 mt-0.5">
                             {pl.tracks.length} parça
                           </p>
                         </div>
@@ -2697,7 +2753,7 @@ export default function HeliosApp() {
 
               {/* TAM EKRAN SENKRONİZE ŞARKI SÖZLERİ GÖRÜNÜMÜ */}
               {activeView === "lyrics" && (
-                <section className="relative rounded-3xl overflow-hidden border border-cyan-400/20 bg-[#0b1222]/90 p-6 md:p-10 h-full min-h-[480px] flex flex-col">
+                <section className="relative rounded-3xl overflow-hidden border border-purple-400/25 bg-[#100821]/90 p-6 md:p-10 h-full min-h-[480px] flex flex-col">
                   {currentTrack && (
                     <div
                       className="pointer-events-none absolute inset-0 opacity-20 blur-3xl scale-125"
@@ -2713,13 +2769,13 @@ export default function HeliosApp() {
                     className="relative z-10 flex-1 overflow-y-auto py-16 px-4 md:px-10 space-y-6"
                   >
                     {!currentTrack ? (
-                      <div className="py-24 text-center text-slate-500">
-                        <MicVocal size={36} className="mx-auto text-slate-600 mb-3" />
+                      <div className="py-24 text-center text-purple-300/50">
+                        <MicVocal size={36} className="mx-auto text-purple-400/40 mb-3" />
                         <p className="text-sm font-medium">Şarkı seçilmedi</p>
                       </div>
                     ) : lyricsData.loading ? (
-                      <div className="py-24 text-center text-slate-400 flex flex-col items-center gap-3">
-                        <Loader2 size={28} className="animate-spin text-cyan-400" />
+                      <div className="py-24 text-center text-purple-300 flex flex-col items-center gap-3">
+                        <Loader2 size={28} className="animate-spin text-purple-400" />
                       </div>
                     ) : lyricsData.synced.length > 0 ? (
                       lyricsData.synced.map((line, i) => {
@@ -2727,43 +2783,43 @@ export default function HeliosApp() {
                         const isPassed = i < activeLyricIndex;
                         return (
                           <p
-                        key={`${line.time}_${i}`}
-                        data-lyric-idx={i}
-                        onClick={() => seekToSeconds(line.time)}
-                        className={`cursor-pointer leading-snug tracking-tight transition-colors duration-300 ${
-                          isActive
-                            ? "text-cyan-200 text-2xl md:text-3xl font-extrabold drop-shadow-[0_0_12px_rgba(34,211,238,0.45)]"
-                            : isPassed
-                            ? "text-slate-600 hover:text-slate-300 text-xl md:text-2xl font-bold"
-                            : "text-slate-500/80 hover:text-slate-200 text-xl md:text-2xl font-bold"
-                        }`}
-                      >
-                        {line.text}
-                      </p>
-                    );
-                  })
-                ) : lyricsData.plain ? (
-                  <div className="whitespace-pre-line text-lg md:text-xl leading-relaxed font-bold text-slate-200 max-w-2xl">
-                    {lyricsData.plain}
+                            key={`${line.time}_${i}`}
+                            data-lyric-idx={i}
+                            onClick={() => seekToSeconds(line.time)}
+                            className={`cursor-pointer leading-snug tracking-tight transition-colors duration-300 ${
+                              isActive
+                                ? "text-purple-200 text-2xl md:text-3xl font-extrabold drop-shadow-[0_0_14px_rgba(192,132,252,0.55)]"
+                                : isPassed
+                                ? "text-purple-400/35 hover:text-purple-200 text-xl md:text-2xl font-bold"
+                                : "text-purple-300/55 hover:text-purple-100 text-xl md:text-2xl font-bold"
+                            }`}
+                          >
+                            {line.text}
+                          </p>
+                        );
+                      })
+                    ) : lyricsData.plain ? (
+                      <div className="whitespace-pre-line text-lg md:text-xl leading-relaxed font-bold text-purple-100 max-w-2xl">
+                        {lyricsData.plain}
+                      </div>
+                    ) : (
+                      <div className="py-24 text-center text-purple-300/50">
+                        <p className="text-sm font-semibold">
+                          {lyricsData.error || "Söz bulunamadı"}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="py-24 text-center text-slate-500">
-                    <p className="text-sm font-semibold">
-                      {lyricsData.error || "Söz bulunamadı"}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
+                </section>
+              )}
 
               {/* ŞARKI LİSTESİ TABLOSU (Home, Liked, Recent, Playlist Detail) */}
               {activeView !== "playlists" && activeView !== "lyrics" && (
                 <section className="space-y-3 pt-1">
                   {/* Liste Üst Başlığı ve Aksiyonlar */}
-                  <div className="flex flex-wrap items-center justify-between gap-4 pb-2.5 border-b border-white/[0.07]">
+                  <div className="flex flex-wrap items-center justify-between gap-4 pb-2.5 border-b border-purple-400/15">
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-400">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-purple-300">
                         {activeView === "artist"
                           ? "ARTIST DISCOGRAPHY"
                           : activeView === "recommendations"
@@ -2789,7 +2845,7 @@ export default function HeliosApp() {
                           ? activePlaylistObj?.name || "Çalma Listesi"
                           : sectionTitle}
                       </h2>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-purple-200/60">
                         {activeView === "artist"
                           ? `${artistTracks.length} şarkı listeleniyor`
                           : activeView === "recommendations"
@@ -2811,7 +2867,7 @@ export default function HeliosApp() {
                           displayedTracks.length > 0 &&
                           playTrackAtIndex(displayedTracks, 0)
                         }
-                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-cyan-400 to-indigo-400 hover:from-cyan-300 hover:to-indigo-300 disabled:opacity-40 text-slate-950 text-xs font-extrabold shadow-[0_0_20px_rgba(56,189,248,0.3)] transition-all"
+                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-400 to-fuchsia-400 hover:from-purple-300 hover:to-fuchsia-300 disabled:opacity-40 text-[#120726] text-xs font-extrabold shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all"
                       >
                         <Play size={14} className="fill-current" />
                         <span>Tümünü Çal</span>
@@ -2827,7 +2883,7 @@ export default function HeliosApp() {
                           );
                           playTrackAtIndex(displayedTracks, rand);
                         }}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#141e33] hover:bg-[#1b2844] disabled:opacity-40 text-slate-200 text-xs font-semibold border border-white/[0.08] transition-all"
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#190f32] hover:bg-[#231546] disabled:opacity-40 text-purple-100 text-xs font-semibold border border-purple-400/20 transition-all"
                       >
                         <Shuffle size={13} />
                         <span>Karıştır</span>
@@ -2841,12 +2897,12 @@ export default function HeliosApp() {
                   (activeView === "recommendations" && isLoadingRecs) ? (
                     <TrackSkeletonList count={8} />
                   ) : displayedTracks.length === 0 ? (
-                    <div className="py-16 text-center rounded-2xl bg-[#11192c]/60 border border-white/[0.06]">
-                      <Music2 size={36} className="mx-auto text-slate-500 mb-2" />
-                      <p className="text-sm font-semibold text-slate-300">
+                    <div className="py-16 text-center rounded-2xl bg-[#150b2b]/60 border border-purple-400/15">
+                      <Music2 size={36} className="mx-auto text-purple-400/60 mb-2" />
+                      <p className="text-sm font-semibold text-purple-100">
                         Burada henüz şarkı yok
                       </p>
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-purple-300/60 mt-1">
                         Arama çubuğunu kullanarak veya tür haplarından şarkı keşfedebilirsin.
                       </p>
                     </div>
@@ -2870,8 +2926,8 @@ export default function HeliosApp() {
                             }}
                             className={`group flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl cursor-pointer transition-all border ${
                               isCurrent
-                                ? "bg-cyan-500/15 border-cyan-400/40 shadow-[0_0_20px_rgba(34,211,238,0.1)]"
-                                : "bg-transparent border-transparent hover:bg-[#141e33]/75 hover:border-white/[0.07]"
+                                ? "bg-purple-500/20 border-purple-400/50 shadow-[0_0_22px_rgba(168,85,247,0.18)]"
+                                : "bg-transparent border-transparent hover:bg-[#190f32]/80 hover:border-purple-400/15"
                             }`}
                           >
                             {/* Sıra No / Ekolayzır / Yükleniyor */}
@@ -2879,27 +2935,27 @@ export default function HeliosApp() {
                               {isCurrent && isTrackLoading ? (
                                 <Loader2
                                   size={16}
-                                  className="text-cyan-400 animate-spin"
+                                  className="text-purple-400 animate-spin"
                                 />
                               ) : isCurrent && isPlaying ? (
                                 <div className="flex items-end gap-0.5 h-3.5">
-                                  <span className="w-0.5 h-full bg-cyan-400 eq-bar eq-bar-1" />
-                                  <span className="w-0.5 h-full bg-cyan-400 eq-bar eq-bar-2" />
-                                  <span className="w-0.5 h-full bg-cyan-400 eq-bar eq-bar-3" />
-                                  <span className="w-0.5 h-full bg-cyan-400 eq-bar eq-bar-4" />
+                                  <span className="w-0.5 h-full bg-purple-400 eq-bar eq-bar-1" />
+                                  <span className="w-0.5 h-full bg-fuchsia-400 eq-bar eq-bar-2" />
+                                  <span className="w-0.5 h-full bg-purple-400 eq-bar eq-bar-3" />
+                                  <span className="w-0.5 h-full bg-fuchsia-400 eq-bar eq-bar-4" />
                                 </div>
                               ) : (
                                 <>
                                   <span
                                     className={`text-xs font-semibold tabular-nums group-hover:hidden ${
-                                      isCurrent ? "text-cyan-300" : "text-slate-500"
+                                      isCurrent ? "text-purple-300" : "text-purple-300/50"
                                     }`}
                                   >
                                     {idx + 1}
                                   </span>
                                   <Play
                                     size={14}
-                                    className="hidden group-hover:block text-cyan-300 fill-current"
+                                    className="hidden group-hover:block text-purple-300 fill-current"
                                   />
                                 </>
                               )}
@@ -2915,25 +2971,25 @@ export default function HeliosApp() {
                             <div className="flex-1 min-w-0">
                               <p
                                 className={`text-sm font-bold truncate ${
-                                  isCurrent ? "text-cyan-300" : "text-slate-100"
+                                  isCurrent ? "text-purple-200" : "text-purple-50"
                                 }`}
                               >
                                 {track.title}
                               </p>
-                              <div className="flex items-center flex-wrap gap-x-1.5 text-xs text-slate-400 truncate mt-0.5">
+                              <div className="flex items-center flex-wrap gap-x-1.5 text-xs text-purple-200/65 truncate mt-0.5">
                                 {splitArtists(track.artist).map(
                                   (art, aIdx, arr) => (
                                     <React.Fragment key={`${art}_${aIdx}`}>
                                       <button
                                         type="button"
                                         onClick={(e) => openArtistPage(art, e)}
-                                        className="hover:text-cyan-300 hover:underline transition-colors truncate"
+                                        className="hover:text-purple-300 hover:underline transition-colors truncate"
                                         title={`${art} sayfasına git`}
                                       >
                                         {art}
                                       </button>
                                       {aIdx < arr.length - 1 && (
-                                        <span className="text-slate-600">•</span>
+                                        <span className="text-purple-400/40">•</span>
                                       )}
                                     </React.Fragment>
                                   )
@@ -2942,7 +2998,7 @@ export default function HeliosApp() {
                             </div>
 
                             {/* Albüm */}
-                            <div className="hidden md:block w-40 text-xs text-slate-500 truncate">
+                            <div className="hidden md:block w-40 text-xs text-purple-300/50 truncate">
                               {track.album}
                             </div>
 
@@ -2955,7 +3011,7 @@ export default function HeliosApp() {
                                 onClick={(e) =>
                                   openSimilarRecommendations(track, e)
                                 }
-                                className="p-2 rounded-lg text-slate-400 hover:text-cyan-300 hover:bg-cyan-500/15 transition-colors"
+                                className="p-2 rounded-lg text-purple-300/60 hover:text-purple-200 hover:bg-purple-500/20 transition-colors"
                                 title="Bu Şarkıyla Aynı Türde Öner (AI)"
                               >
                                 <Sparkles size={15} />
@@ -2963,7 +3019,7 @@ export default function HeliosApp() {
 
                               <button
                                 onClick={() => setTrackForPlaylistModal(track)}
-                                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                                className="p-2 rounded-lg text-purple-300/60 hover:text-white hover:bg-purple-500/15 transition-colors"
                                 title="Çalma Listesine Ekle"
                               >
                                 <ListPlus size={15} />
@@ -2973,8 +3029,8 @@ export default function HeliosApp() {
                                 onClick={(e) => toggleLikeTrack(track, e)}
                                 className={`p-2 rounded-lg transition-colors ${
                                   liked
-                                    ? "text-cyan-400 hover:bg-cyan-500/15"
-                                    : "text-slate-400 hover:text-white hover:bg-white/10"
+                                    ? "text-fuchsia-400 hover:bg-fuchsia-500/15"
+                                    : "text-purple-300/60 hover:text-white hover:bg-purple-500/15"
                                 }`}
                                 title={liked ? "Beğeniden Çıkar" : "Beğen"}
                               >
@@ -2994,7 +3050,7 @@ export default function HeliosApp() {
                                         e
                                       )
                                     }
-                                    className="p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                                    className="p-2 rounded-lg text-purple-300/60 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
                                     title="Bu Listeden Kaldır"
                                   >
                                     <Trash2 size={14} />
@@ -3003,7 +3059,7 @@ export default function HeliosApp() {
                             </div>
 
                             {/* Süre */}
-                            <div className="w-11 text-right text-xs font-medium text-slate-500 tabular-nums">
+                            <div className="w-11 text-right text-xs font-medium text-purple-300/50 tabular-nums">
                               {track.duration || "0:00"}
                             </div>
                           </div>
@@ -3015,9 +3071,9 @@ export default function HeliosApp() {
               )}
             </main>
 
-            {/* ===== 3. SAĞ SÜTUN: SYNTHESIA `NOW PLAYING` ENTEGRE OYNATICI + YÜZEN `LYRICS / UP NEXT` KARTI ===== */}
+            {/* ===== 3. SAĞ SÜTUN: SYNTHESIA `NOW PLAYING` ENTEGRE OYNATICI (MOR TEMA) + YÜZEN `LYRICS / UP NEXT` KARTI ===== */}
             {isRightSidebarOpen && (
-              <aside className="hidden lg:flex relative w-80 xl:w-[345px] shrink-0 bg-[#0b1222]/75 border-l border-white/[0.07] backdrop-blur-2xl p-5 flex-col justify-between overflow-y-auto overflow-x-hidden">
+              <aside className="hidden lg:flex relative w-80 xl:w-[345px] shrink-0 bg-[#100821]/80 border-l border-purple-400/10 backdrop-blur-2xl p-5 flex-col justify-between overflow-y-auto overflow-x-hidden">
                 {/* Sağ Üst Başlık: NOW PLAYING */}
                 <div>
                   <div className="flex items-center justify-between mb-4">
@@ -3025,6 +3081,14 @@ export default function HeliosApp() {
                       NOW PLAYING
                     </h2>
                     <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleFullscreenMode(false)}
+                        className="p-1.5 rounded-lg text-purple-300/80 hover:text-white hover:bg-purple-500/20 transition-colors"
+                        title="Tam Ekran Modu (F11)"
+                      >
+                        <Maximize2 size={15} />
+                      </button>
                       <button
                         type="button"
                         onClick={() => {
@@ -3037,8 +3101,8 @@ export default function HeliosApp() {
                         }}
                         className={`p-1.5 rounded-lg transition-colors ${
                           shuffle
-                            ? "text-cyan-300 bg-cyan-500/15"
-                            : "text-slate-400 hover:text-white"
+                            ? "text-purple-300 bg-purple-500/20"
+                            : "text-purple-300/60 hover:text-white"
                         }`}
                         title="Karıştır"
                       >
@@ -3049,8 +3113,8 @@ export default function HeliosApp() {
                         onClick={() => setIsUpNextCardOpen((v) => !v)}
                         className={`p-1.5 rounded-lg transition-colors ${
                           isUpNextCardOpen
-                            ? "text-cyan-300 bg-cyan-500/15"
-                            : "text-slate-400 hover:text-white"
+                            ? "text-purple-300 bg-purple-500/20"
+                            : "text-purple-300/60 hover:text-white"
                         }`}
                         title="Lyrics & Up Next Kartını Aç/Kapat"
                       >
@@ -3059,12 +3123,16 @@ export default function HeliosApp() {
                     </div>
                   </div>
 
-                  {/* Büyük Kare Parlayan Albüm Kapağı + Yüzen LYRICS & UP NEXT Cam Kartı */}
+                  {/* Büyük Kare Parlayan Mor Albüm Kapağı + Yüzen LYRICS & UP NEXT Cam Kartı */}
                   <div className="relative">
-                    {/* Kapak Arkası Cyan/Mor Parlama */}
-                    <div className="pointer-events-none absolute -inset-2 rounded-3xl bg-gradient-to-tr from-cyan-500/25 via-indigo-500/20 to-purple-500/25 blur-xl opacity-80" />
+                    {/* Kapak Arkası Mor/Fuchsia Parlama */}
+                    <div className="pointer-events-none absolute -inset-2 rounded-3xl bg-gradient-to-tr from-purple-600/35 via-fuchsia-500/25 to-violet-500/35 blur-xl opacity-85" />
 
-                    <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-[#0a0f1d] border border-cyan-400/35 shadow-[0_0_45px_rgba(56,189,248,0.22)]">
+                    <div
+                      onDoubleClick={() => handleToggleFullscreenMode(false)}
+                      className="relative aspect-square w-full rounded-2xl overflow-hidden bg-[#0c061a] border border-purple-400/45 shadow-[0_0_45px_rgba(168,85,247,0.3)] cursor-pointer group"
+                      title="Tam ekran için çift tıkla"
+                    >
                       {currentTrack ? (
                         <>
                           <TrackArtwork
@@ -3072,18 +3140,28 @@ export default function HeliosApp() {
                             className="w-full h-full rounded-none border-0"
                             iconSize={52}
                           />
-                          {/* Kapak Üzeri Hafif Kozmik Halka & Alt Sanatçı Etiketi (Görseldeki NEBULA / LUMINA estetiği) */}
-                          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#070b15]/85 via-transparent to-black/20" />
+                          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#090514]/85 via-transparent to-black/20" />
                           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-end p-4 text-center">
-                            <span className="text-[11px] font-semibold uppercase tracking-[0.26em] text-slate-200/90 drop-shadow">
+                            <span className="text-[11px] font-semibold uppercase tracking-[0.26em] text-purple-100/90 drop-shadow">
                               {splitArtists(currentTrack.artist)[0] ||
                                 currentTrack.artist}
                             </span>
                           </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleFullscreenMode(false);
+                            }}
+                            className="absolute top-3 right-3 p-2 rounded-xl bg-black/55 hover:bg-purple-600/80 text-purple-100 border border-purple-300/30 opacity-0 group-hover:opacity-100 transition-all backdrop-blur-md"
+                            title="Tam Ekran Moduna Geç (F11)"
+                          >
+                            <Maximize2 size={15} />
+                          </button>
                         </>
                       ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center">
-                          <div className="relative w-28 h-28 rounded-full flex items-center justify-center border border-cyan-400/40 shadow-[0_0_35px_rgba(56,189,248,0.3)] mb-3">
+                        <div className="w-full h-full flex flex-col items-center justify-center text-purple-300/60 p-6 text-center">
+                          <div className="relative w-28 h-28 rounded-full flex items-center justify-center border border-purple-400/45 shadow-[0_0_35px_rgba(168,85,247,0.35)] mb-3">
                             <img
                               src="/mihon-logo.jpg"
                               alt="Mihon"
@@ -3093,16 +3171,16 @@ export default function HeliosApp() {
                           <p className="text-sm font-bold tracking-[0.2em] uppercase text-white">
                             MIHON
                           </p>
-                          <p className="text-[11px] text-slate-400 mt-1">
+                          <p className="text-[11px] text-purple-300/60 mt-1">
                             Bir parçaya tıklayarak başlat
                           </p>
                         </div>
                       )}
                     </div>
 
-                    {/* Görseldeki Sağ-Alt Yüzen `LYRICS` & `UP NEXT` Cam Kartı */}
+                    {/* Sağ-Alt Yüzen `LYRICS` & `UP NEXT` Cam Kartı */}
                     {isUpNextCardOpen && (
-                      <div className="mt-3 rounded-xl bg-[#131d31]/95 border border-white/[0.1] backdrop-blur-2xl p-3 shadow-[0_12px_32px_rgba(0,0,0,0.65)]">
+                      <div className="mt-3 rounded-xl bg-[#170d30]/95 border border-purple-400/20 backdrop-blur-2xl p-3 shadow-[0_12px_32px_rgba(0,0,0,0.65)]">
                         {/* LYRICS Satırı */}
                         <div
                           onClick={() =>
@@ -3110,29 +3188,29 @@ export default function HeliosApp() {
                               activeView === "lyrics" ? "home" : "lyrics"
                             )
                           }
-                          className="flex items-center justify-between pb-2 mb-2 border-b border-white/[0.07] cursor-pointer group"
+                          className="flex items-center justify-between pb-2 mb-2 border-b border-purple-400/15 cursor-pointer group"
                         >
                           <div className="min-w-0 flex-1 pr-2">
-                            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-200 group-hover:text-cyan-300 transition-colors">
+                            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-purple-100 group-hover:text-purple-300 transition-colors">
                               LYRICS
                             </span>
                             {activeLyricIndex >= 0 &&
                               lyricsData.synced[activeLyricIndex] && (
-                                <p className="text-[11px] text-cyan-300 font-medium truncate mt-0.5">
+                                <p className="text-[11px] text-fuchsia-300 font-medium truncate mt-0.5">
                                   “{lyricsData.synced[activeLyricIndex].text}”
                                 </p>
                               )}
                           </div>
                           <MoreHorizontal
                             size={14}
-                            className="text-slate-400 group-hover:text-cyan-300 shrink-0"
+                            className="text-purple-300/60 group-hover:text-purple-200 shrink-0"
                           />
                         </div>
 
                         {/* UP NEXT Bölümü */}
                         <div>
                           <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-300">
+                            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-purple-200/80">
                               UP NEXT
                             </span>
                             {currentTrack && (
@@ -3141,7 +3219,7 @@ export default function HeliosApp() {
                                 onClick={(e) =>
                                   openSimilarRecommendations(currentTrack, e)
                                 }
-                                className="text-[10px] font-semibold text-cyan-300 hover:underline flex items-center gap-1"
+                                className="text-[10px] font-semibold text-purple-300 hover:underline flex items-center gap-1"
                               >
                                 <Sparkles size={10} />
                                 <span>AI Öner</span>
@@ -3158,7 +3236,7 @@ export default function HeliosApp() {
                                   onClick={() =>
                                     playTrackAtIndex(queue, queueIndex + 1 + i)
                                   }
-                                  className="flex items-center gap-2.5 p-1 rounded-lg hover:bg-white/[0.06] cursor-pointer transition-colors"
+                                  className="flex items-center gap-2.5 p-1 rounded-lg hover:bg-purple-500/15 cursor-pointer transition-colors"
                                 >
                                   <TrackArtwork
                                     track={item}
@@ -3166,10 +3244,10 @@ export default function HeliosApp() {
                                     iconSize={12}
                                   />
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-[11px] font-semibold text-slate-100 truncate">
+                                    <p className="text-[11px] font-semibold text-purple-50 truncate">
                                       {item.title}
                                     </p>
-                                    <p className="text-[9px] uppercase tracking-wider text-slate-400 truncate">
+                                    <p className="text-[9px] uppercase tracking-wider text-purple-300/60 truncate">
                                       {item.artist}
                                     </p>
                                   </div>
@@ -3177,7 +3255,7 @@ export default function HeliosApp() {
                               ))}
                             {queue.slice(queueIndex + 1, queueIndex + 5)
                               .length === 0 && (
-                              <p className="text-[11px] text-slate-500 py-1">
+                              <p className="text-[11px] text-purple-300/40 py-1">
                                 Sıradaki parça otomatik seçilecek
                               </p>
                             )}
@@ -3188,23 +3266,22 @@ export default function HeliosApp() {
                   </div>
                 </div>
 
-                {/* Alt Kısım: Şarkı Başlığı, Kalp, Parlayan Cyan Seekbar, Oynatma Kontrolleri ve Ses Çubuğu */}
+                {/* Alt Kısım: Şarkı Başlığı, Kalp, Parlayan Mor Seekbar, Oynatma Kontrolleri ve Ses Çubuğu */}
                 <div className="mt-4 space-y-3.5">
-                  {/* Şarkı Başlığı + Sanatçı + Kalp & Liste Butonu */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <h3 className="text-lg font-bold uppercase tracking-wider text-white truncate">
                         {currentTrack ? currentTrack.title : "MIHON READY"}
                       </h3>
                       {currentTrack ? (
-                        <div className="flex items-center flex-wrap gap-x-1.5 text-xs font-medium uppercase tracking-widest text-slate-400 mt-0.5">
+                        <div className="flex items-center flex-wrap gap-x-1.5 text-xs font-medium uppercase tracking-widest text-purple-300/75 mt-0.5">
                           {splitArtists(currentTrack.artist).map(
                             (art, aIdx, arr) => (
                               <React.Fragment key={`${art}_${aIdx}`}>
                                 <button
                                   type="button"
                                   onClick={(e) => openArtistPage(art, e)}
-                                  className="hover:text-cyan-300 transition-colors truncate"
+                                  className="hover:text-purple-200 transition-colors truncate"
                                 >
                                   {art}
                                 </button>
@@ -3214,7 +3291,7 @@ export default function HeliosApp() {
                           )}
                         </div>
                       ) : (
-                        <p className="text-xs uppercase tracking-widest text-slate-500 mt-0.5">
+                        <p className="text-xs uppercase tracking-widest text-purple-300/45 mt-0.5">
                           SELECT A TRACK
                         </p>
                       )}
@@ -3224,7 +3301,7 @@ export default function HeliosApp() {
                       <div className="flex items-center gap-1 shrink-0">
                         <button
                           onClick={() => setTrackForPlaylistModal(currentTrack)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                          className="p-1.5 rounded-lg text-purple-300/70 hover:text-white hover:bg-purple-500/15 transition-colors"
                           title="Çalma Listesine Ekle"
                         >
                           <ListPlus size={16} />
@@ -3233,8 +3310,8 @@ export default function HeliosApp() {
                           onClick={(e) => toggleLikeTrack(currentTrack, e)}
                           className={`p-1.5 rounded-lg transition-colors ${
                             isTrackLiked(currentTrack.id)
-                              ? "text-cyan-300 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]"
-                              : "text-slate-300 hover:text-white"
+                              ? "text-fuchsia-400 drop-shadow-[0_0_8px_rgba(232,121,249,0.7)]"
+                              : "text-purple-200/80 hover:text-white"
                           }`}
                           title="Beğen"
                         >
@@ -3249,7 +3326,7 @@ export default function HeliosApp() {
                     )}
                   </div>
 
-                  {/* Parlayan Cyan İlerleme Çubuğu (Seekbar) */}
+                  {/* Parlayan Mor İlerleme Çubuğu (Seekbar) */}
                   <div className="space-y-1">
                     <input
                       type="range"
@@ -3278,13 +3355,13 @@ export default function HeliosApp() {
                       style={{ "--progress": `${seekPercent}%` }}
                       className="helios-slider w-full"
                     />
-                    <div className="flex items-center justify-between text-[10px] font-medium text-slate-400 tabular-nums">
+                    <div className="flex items-center justify-between text-[10px] font-medium text-purple-300/65 tabular-nums">
                       <span>{formatTime(displayedTime)}</span>
                       <span>{formatTime(effectiveDuration)}</span>
                     </div>
                   </div>
 
-                  {/* Ana Oynatma Kontrolleri (Shuffle, Prev, Parlayan Cyan/Beyaz Play, Next, Repeat) */}
+                  {/* Ana Oynatma Kontrolleri */}
                   <div className="flex items-center justify-between px-1">
                     <button
                       onClick={() => {
@@ -3297,8 +3374,8 @@ export default function HeliosApp() {
                       }}
                       className={`p-2 rounded-lg transition-colors ${
                         shuffle
-                          ? "text-cyan-300 bg-cyan-500/15"
-                          : "text-slate-400 hover:text-white"
+                          ? "text-purple-300 bg-purple-500/20"
+                          : "text-purple-300/60 hover:text-white"
                       }`}
                       title="Karıştır"
                     >
@@ -3307,7 +3384,7 @@ export default function HeliosApp() {
 
                     <button
                       onClick={handlePrev}
-                      className="p-2 rounded-lg text-slate-200 hover:text-cyan-300 transition-colors"
+                      className="p-2 rounded-lg text-purple-100 hover:text-purple-300 transition-colors"
                       title="Önceki Parça"
                     >
                       <SkipBack size={20} className="fill-current" />
@@ -3315,11 +3392,11 @@ export default function HeliosApp() {
 
                     <button
                       onClick={togglePlayPause}
-                      className="w-12 h-12 rounded-2xl bg-gradient-to-br from-white via-cyan-200 to-sky-400 hover:scale-105 active:scale-95 text-slate-950 flex items-center justify-center shadow-[0_0_28px_rgba(56,189,248,0.65)] transition-all"
+                      className="w-12 h-12 rounded-2xl bg-gradient-to-br from-white via-purple-200 to-fuchsia-400 hover:scale-105 active:scale-95 text-[#120726] flex items-center justify-center shadow-[0_0_28px_rgba(168,85,247,0.75)] transition-all"
                       title="Oynat / Duraklat (Boşluk)"
                     >
                       {isTrackLoading ? (
-                        <Loader2 size={22} className="animate-spin text-slate-950" />
+                        <Loader2 size={22} className="animate-spin text-[#120726]" />
                       ) : isPlaying ? (
                         <Pause size={22} className="fill-current" />
                       ) : (
@@ -3329,7 +3406,7 @@ export default function HeliosApp() {
 
                     <button
                       onClick={() => handleNext(true)}
-                      className="p-2 rounded-lg text-slate-200 hover:text-cyan-300 transition-colors"
+                      className="p-2 rounded-lg text-purple-100 hover:text-purple-300 transition-colors"
                       title="Sonraki Parça"
                     >
                       <SkipForward size={20} className="fill-current" />
@@ -3347,8 +3424,8 @@ export default function HeliosApp() {
                       }}
                       className={`p-2 rounded-lg transition-colors ${
                         repeatMode !== "off"
-                          ? "text-cyan-300 bg-cyan-500/15"
-                          : "text-slate-400 hover:text-white"
+                          ? "text-purple-300 bg-purple-500/20"
+                          : "text-purple-300/60 hover:text-white"
                       }`}
                       title="Tekrarla"
                     >
@@ -3360,11 +3437,11 @@ export default function HeliosApp() {
                     </button>
                   </div>
 
-                  {/* Alt Ses Kaydırıcısı ve Yardımcı Kontroller (Görselin Sağ En Alt Satırı) */}
-                  <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between gap-2.5">
+                  {/* Alt Ses Kaydırıcısı ve Yardımcı Kontroller (Tam Ekran İkonu Dahil!) */}
+                  <div className="pt-2 border-t border-purple-400/10 flex items-center justify-between gap-2">
                     <button
                       onClick={() => setIsMuted((m) => !m)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-white transition-colors"
+                      className="p-1.5 rounded-lg text-purple-300/70 hover:text-white transition-colors"
                       title="Sesi Kapat / Aç"
                     >
                       {isMuted || volume === 0 ? (
@@ -3400,8 +3477,8 @@ export default function HeliosApp() {
                         onClick={cyclePlaybackSpeed}
                         className={`px-2 py-1 rounded-md text-[10px] font-extrabold border transition-all ${
                           playbackRate !== 1
-                            ? "bg-cyan-500/20 text-cyan-300 border-cyan-400/40"
-                            : "bg-white/[0.04] text-slate-400 border-white/10 hover:text-white"
+                            ? "bg-purple-500/25 text-purple-200 border-purple-400/50"
+                            : "bg-white/[0.04] text-purple-300/70 border-white/10 hover:text-white"
                         }`}
                         title="Oynatma Hızı"
                       >
@@ -3416,25 +3493,21 @@ export default function HeliosApp() {
                         }
                         className={`p-1.5 rounded-md transition-colors ${
                           activeView === "lyrics"
-                            ? "text-cyan-300 bg-cyan-500/15"
-                            : "text-slate-400 hover:text-white"
+                            ? "text-purple-200 bg-purple-500/25"
+                            : "text-purple-300/70 hover:text-white"
                         }`}
                         title="Canlı Şarkı Sözleri"
                       >
                         <MicVocal size={14} />
                       </button>
 
-                      {currentTrack && (
-                        <button
-                          onClick={(e) =>
-                            openSimilarRecommendations(currentTrack, e)
-                          }
-                          className="p-1.5 rounded-md text-slate-400 hover:text-cyan-300 transition-colors"
-                          title="Aynı Türde AI Öner"
-                        >
-                          <Sparkles size={14} />
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleToggleFullscreenMode(false)}
+                        className="p-1.5 rounded-md text-purple-300/70 hover:text-purple-200 hover:bg-purple-500/20 transition-colors"
+                        title="Tam Ekran Sahne Modu (F11)"
+                      >
+                        <Maximize2 size={14} />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -3444,7 +3517,7 @@ export default function HeliosApp() {
 
           {/* Sağ Panel Kapalıyken veya Küçük Ekranda Kompakt Alt Oynatıcı */}
           {!isRightSidebarOpen && (
-            <footer className="h-20 px-5 bg-[#0b1222]/95 border-t border-white/[0.08] backdrop-blur-2xl flex items-center justify-between gap-5 shrink-0">
+            <footer className="h-20 px-5 bg-[#100821]/95 border-t border-purple-400/15 backdrop-blur-2xl flex items-center justify-between gap-5 shrink-0">
               <div className="flex items-center gap-3 w-64 min-w-0">
                 <TrackArtwork
                   track={currentTrack}
@@ -3455,7 +3528,7 @@ export default function HeliosApp() {
                   <p className="text-xs font-bold text-white truncate">
                     {currentTrack ? currentTrack.title : "Mihon"}
                   </p>
-                  <p className="text-[11px] text-slate-400 truncate">
+                  <p className="text-[11px] text-purple-300/70 truncate">
                     {currentTrack ? currentTrack.artist : "Parça seçilmedi"}
                   </p>
                 </div>
@@ -3465,13 +3538,13 @@ export default function HeliosApp() {
                 <div className="flex items-center gap-3">
                   <button
                     onClick={handlePrev}
-                    className="p-1.5 text-slate-200 hover:text-cyan-300"
+                    className="p-1.5 text-purple-100 hover:text-purple-300"
                   >
                     <SkipBack size={17} className="fill-current" />
                   </button>
                   <button
                     onClick={togglePlayPause}
-                    className="w-9 h-9 rounded-full bg-cyan-400 text-slate-950 flex items-center justify-center shadow-[0_0_16px_rgba(56,189,248,0.5)]"
+                    className="w-9 h-9 rounded-full bg-purple-400 text-[#120726] flex items-center justify-center shadow-[0_0_16px_rgba(168,85,247,0.6)]"
                   >
                     {isPlaying ? (
                       <Pause size={16} className="fill-current" />
@@ -3481,13 +3554,13 @@ export default function HeliosApp() {
                   </button>
                   <button
                     onClick={() => handleNext(true)}
-                    className="p-1.5 text-slate-200 hover:text-cyan-300"
+                    className="p-1.5 text-purple-100 hover:text-purple-300"
                   >
                     <SkipForward size={17} className="fill-current" />
                   </button>
                 </div>
                 <div className="w-full flex items-center gap-2.5">
-                  <span className="text-[10px] text-slate-400 tabular-nums">
+                  <span className="text-[10px] text-purple-300/70 tabular-nums">
                     {formatTime(displayedTime)}
                   </span>
                   <input
@@ -3501,7 +3574,7 @@ export default function HeliosApp() {
                     style={{ "--progress": `${seekPercent}%` }}
                     className="helios-slider flex-1"
                   />
-                  <span className="text-[10px] text-slate-400 tabular-nums">
+                  <span className="text-[10px] text-purple-300/70 tabular-nums">
                     {formatTime(effectiveDuration)}
                   </span>
                 </div>
@@ -3509,8 +3582,15 @@ export default function HeliosApp() {
 
               <div className="flex items-center justify-end gap-2 w-56">
                 <button
+                  onClick={() => handleToggleFullscreenMode(false)}
+                  className="p-2 rounded-lg text-purple-200 bg-purple-500/20 border border-purple-400/40"
+                  title="Tam Ekran Modu (F11)"
+                >
+                  <Maximize2 size={14} />
+                </button>
+                <button
                   onClick={() => setIsRightSidebarOpen(true)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40"
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-500/25 text-purple-200 border border-purple-400/45"
                 >
                   Now Playing Aç
                 </button>
@@ -3519,6 +3599,271 @@ export default function HeliosApp() {
           )}
         </div>
       </div>
+
+      {/* ===== SİNEMATİK TAM EKRAN SAHNE MODU (F11 / Tam Ekran Butonu) ===== */}
+      {isFullscreenStage && (
+        <div className="fixed inset-0 z-40 bg-[#070312] flex flex-col justify-between p-6 md:p-10 overflow-hidden select-none">
+          {/* Arka Plan Bulanık Albüm Kapağı & Mor Aurora */}
+          {currentTrack && (
+            <div
+              className="pointer-events-none absolute inset-0 opacity-30 blur-[90px] scale-125 transition-all duration-700"
+              style={{
+                backgroundImage: `url(${getTrackCover(currentTrack)})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
+            />
+          )}
+          <div
+            className="pointer-events-none absolute inset-0 opacity-60"
+            style={{
+              background:
+                "radial-gradient(circle at 25% 35%, rgba(168,85,247,0.35), transparent 55%), radial-gradient(circle at 80% 70%, rgba(217,70,239,0.28), transparent 55%)",
+            }}
+          />
+
+          {/* Üst Bar: Marka + Tam Ekrandan Çıkış */}
+          <div
+            data-tauri-drag-region
+            className="relative z-10 flex items-center justify-between"
+          >
+            <div className="flex items-center gap-3">
+              <img
+                src="/mihon-logo.jpg"
+                alt="Mihon"
+                className="w-8 h-8 rounded-xl object-cover border border-purple-400/50 shadow-[0_0_20px_rgba(168,85,247,0.5)]"
+              />
+              <div>
+                <span className="text-sm font-light tracking-[0.35em] uppercase text-white block">
+                  MIHON
+                </span>
+                <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-purple-300">
+                  IMMERSIVE FULLSCREEN STAGE
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleToggleFullscreenMode(false)}
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/25 hover:bg-purple-500/40 text-purple-100 border border-purple-400/50 text-xs font-bold shadow-[0_0_20px_rgba(168,85,247,0.35)] transition-all"
+              >
+                <Minimize2 size={14} />
+                <span>Tam Ekrandan Çık (ESC / F11)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Orta Sahne: Sol Dev Parlayan Kapak & Sağ Canlı Senkronize Sözler */}
+          <div className="relative z-10 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center min-h-0 my-6">
+            {/* Sol: Dev Albüm Kapağı & Parça Bilgisi */}
+            <div className="lg:col-span-5 flex flex-col items-center lg:items-start justify-center space-y-6">
+              <div className="relative group">
+                <div className="pointer-events-none absolute -inset-4 rounded-[32px] bg-gradient-to-tr from-purple-600/45 via-fuchsia-500/35 to-indigo-500/40 blur-2xl opacity-90" />
+                <div className="relative w-64 h-64 sm:w-80 sm:h-80 xl:w-96 xl:h-96 rounded-3xl overflow-hidden bg-[#100821] border border-purple-300/45 shadow-[0_0_70px_rgba(168,85,247,0.45)]">
+                  <TrackArtwork
+                    track={currentTrack}
+                    className="w-full h-full rounded-none border-0"
+                    iconSize={72}
+                  />
+                </div>
+              </div>
+
+              <div className="text-center lg:text-left max-w-md w-full">
+                <h1 className="text-2xl sm:text-4xl font-black uppercase tracking-wide text-white truncate drop-shadow">
+                  {currentTrack ? currentTrack.title : "MIHON"}
+                </h1>
+                <p className="text-sm sm:text-base font-semibold uppercase tracking-[0.2em] text-purple-300 mt-1 truncate">
+                  {currentTrack ? currentTrack.artist : "Kozmik Müzik Deneyimi"}
+                </p>
+              </div>
+            </div>
+
+            {/* Sağ: Canlı Senkronize Şarkı Sözleri */}
+            <div
+              ref={fullscreenLyricsRef}
+              className="lg:col-span-7 h-full max-h-[58vh] overflow-y-auto px-4 md:px-8 py-10 space-y-6 rounded-3xl bg-[#110824]/55 border border-purple-400/20 backdrop-blur-xl"
+            >
+              {!currentTrack ? (
+                <div className="py-20 text-center text-purple-300/50">
+                  <MicVocal size={40} className="mx-auto mb-3 opacity-50" />
+                  <p className="text-base font-semibold">
+                    Bir şarkı başlattığında canlı sözler burada akar
+                  </p>
+                </div>
+              ) : lyricsData.loading ? (
+                <div className="py-20 flex items-center justify-center">
+                  <Loader2 size={32} className="animate-spin text-purple-400" />
+                </div>
+              ) : lyricsData.synced.length > 0 ? (
+                lyricsData.synced.map((line, i) => {
+                  const isActive = i === activeLyricIndex;
+                  const isPassed = i < activeLyricIndex;
+                  return (
+                    <p
+                      key={`fs_${line.time}_${i}`}
+                      data-lyric-idx={i}
+                      onClick={() => seekToSeconds(line.time)}
+                      className={`cursor-pointer leading-snug tracking-tight transition-colors duration-300 ${
+                        isActive
+                          ? "text-white text-2xl sm:text-4xl font-black drop-shadow-[0_0_20px_rgba(217,70,239,0.75)]"
+                          : isPassed
+                          ? "text-purple-400/30 hover:text-purple-200 text-xl sm:text-2xl font-bold"
+                          : "text-purple-200/50 hover:text-purple-100 text-xl sm:text-2xl font-bold"
+                      }`}
+                    >
+                      {line.text}
+                    </p>
+                  );
+                })
+              ) : lyricsData.plain ? (
+                <div className="whitespace-pre-line text-lg sm:text-2xl leading-relaxed font-bold text-purple-100">
+                  {lyricsData.plain}
+                </div>
+              ) : (
+                <div className="py-20 text-center text-purple-300/60">
+                  <p className="text-base font-semibold">
+                    {lyricsData.error || "Bu parça için senkronize söz bulunamadı"}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Alt Bar: Tam Ekran Oynatma Kontrolleri & Seekbar */}
+          <div className="relative z-10 max-w-4xl w-full mx-auto bg-[#130a29]/85 border border-purple-400/25 rounded-3xl px-6 py-4 backdrop-blur-2xl shadow-[0_12px_50px_rgba(0,0,0,0.7)] space-y-3">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold text-purple-200/80 tabular-nums w-10 text-right">
+                {formatTime(displayedTime)}
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={effectiveDuration || 100}
+                step={0.1}
+                value={displayedTime}
+                disabled={!currentTrack}
+                onChange={(e) => seekToSeconds(parseFloat(e.target.value))}
+                style={{ "--progress": `${seekPercent}%` }}
+                className="helios-slider flex-1"
+              />
+              <span className="text-xs font-semibold text-purple-200/80 tabular-nums w-10">
+                {formatTime(effectiveDuration)}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {currentTrack && (
+                  <>
+                    <button
+                      onClick={(e) => toggleLikeTrack(currentTrack, e)}
+                      className={`p-2 rounded-xl border transition-all ${
+                        isTrackLiked(currentTrack.id)
+                          ? "bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-400/40"
+                          : "bg-white/[0.04] text-purple-200 border-white/10"
+                      }`}
+                    >
+                      <Heart
+                        size={17}
+                        className={
+                          isTrackLiked(currentTrack.id) ? "fill-current" : ""
+                        }
+                      />
+                    </button>
+                    <button
+                      onClick={(e) =>
+                        openSimilarRecommendations(currentTrack, e)
+                      }
+                      className="px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/35 text-purple-200 border border-purple-400/35 text-xs font-bold flex items-center gap-1.5"
+                    >
+                      <Sparkles size={13} />
+                      <span>AI Benzerleri</span>
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setShuffle((s) => !s)}
+                  className={`p-2 rounded-lg ${
+                    shuffle ? "text-purple-300" : "text-purple-300/50 hover:text-white"
+                  }`}
+                >
+                  <Shuffle size={18} />
+                </button>
+                <button
+                  onClick={handlePrev}
+                  className="p-2 text-white hover:text-purple-300 transition-colors"
+                >
+                  <SkipBack size={24} className="fill-current" />
+                </button>
+                <button
+                  onClick={togglePlayPause}
+                  className="w-14 h-14 rounded-2xl bg-gradient-to-br from-white via-purple-200 to-fuchsia-400 text-[#120726] flex items-center justify-center shadow-[0_0_35px_rgba(192,132,252,0.85)] hover:scale-105 transition-all"
+                >
+                  {isPlaying ? (
+                    <Pause size={26} className="fill-current" />
+                  ) : (
+                    <Play size={26} className="fill-current ml-1" />
+                  )}
+                </button>
+                <button
+                  onClick={() => handleNext(true)}
+                  className="p-2 text-white hover:text-purple-300 transition-colors"
+                >
+                  <SkipForward size={24} className="fill-current" />
+                </button>
+                <button
+                  onClick={() => {
+                    const next =
+                      repeatMode === "off"
+                        ? "all"
+                        : repeatMode === "all"
+                        ? "one"
+                        : "off";
+                    setRepeatMode(next);
+                  }}
+                  className={`p-2 rounded-lg ${
+                    repeatMode !== "off"
+                      ? "text-purple-300"
+                      : "text-purple-300/50 hover:text-white"
+                  }`}
+                >
+                  {repeatMode === "one" ? (
+                    <Repeat1 size={18} />
+                  ) : (
+                    <Repeat size={18} />
+                  )}
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 w-44 justify-end">
+                <Volume2 size={16} className="text-purple-300/80" />
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={isMuted ? 0 : volume}
+                  onChange={(e) => {
+                    const v = parseFloat(e.target.value);
+                    volumeRef.current = v;
+                    mutedRef.current = false;
+                    applyAudioSettings();
+                    setVolume(v);
+                    setIsMuted(false);
+                  }}
+                  style={{ "--progress": `${(isMuted ? 0 : volume) * 100}%` }}
+                  className="helios-slider w-24"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ===== MODAL 1: YENİ ÇALMA LİSTESİ OLUŞTUR ===== */}
       {isCreateModalOpen && (
