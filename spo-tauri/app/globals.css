@@ -9,30 +9,30 @@
 * {
   box-sizing: border-box;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+  scrollbar-color: rgba(56, 189, 248, 0.22) transparent;
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(148, 163, 184, 0.2);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(56, 189, 248, 0.45);
 }
 
 html,
 body {
   height: 100%;
   overflow: hidden;
-  background-color: #09090b;
-  color: #f4f4f5;
+  background-color: #080d1a;
+  color: #f1f5f9;
   user-select: none;
   -webkit-font-smoothing: antialiased;
 }
@@ -63,7 +63,22 @@ body {
   animation-delay: 0.15s;
 }
 
-/* Custom Range Input (Seekbar & Volume) */
+@keyframes cosmic-pulse {
+  0%, 100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.04);
+  }
+}
+
+.cosmic-glow {
+  animation: cosmic-pulse 6s ease-in-out infinite;
+}
+
+/* Custom Range Input (Synthesia Glowing Cyan Seekbar & Volume) */
 input[type="range"].helios-slider {
   -webkit-appearance: none;
   appearance: none;
@@ -72,38 +87,39 @@ input[type="range"].helios-slider {
 }
 
 input[type="range"].helios-slider::-webkit-slider-runnable-track {
-  height: 5px;
+  height: 4px;
   border-radius: 9999px;
   background: linear-gradient(
     to right,
-    var(--slider-color, #f06b3c) var(--progress, 0%),
+    #38bdf8 0%,
+    #a5f3fc var(--progress, 0%),
     rgba(255, 255, 255, 0.14) var(--progress, 0%)
   );
   transition: height 0.15s ease;
 }
 
 input[type="range"].helios-slider:hover::-webkit-slider-runnable-track {
-  height: 6px;
+  height: 5px;
 }
 
 input[type="range"].helios-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  height: 13px;
-  width: 13px;
+  height: 12px;
+  width: 12px;
   border-radius: 9999px;
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  background: #e0f2fe;
+  border: 2px solid #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.95), 0 0 4px #ffffff;
   margin-top: -4px;
-  opacity: 0;
-  transform: scale(0.75);
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  opacity: 1;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 input[type="range"].helios-slider:hover::-webkit-slider-thumb,
 input[type="range"].helios-slider:active::-webkit-slider-thumb {
-  opacity: 1;
-  transform: scale(1);
+  transform: scale(1.2);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 1), 0 0 6px #ffffff;
 }
 
 /* Next.js dev indicator gizle */
@@ -112,4 +128,3 @@ nextjs-portal,
 [data-nextjs-dialog-overlay] {
   display: none !important;
 }
-

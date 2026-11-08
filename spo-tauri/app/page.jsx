@@ -45,71 +45,149 @@ import {
   MicVocal,
   Maximize2,
   Minimize2,
+  Home,
+  Bookmark,
+  MoreHorizontal,
 } from "lucide-react";
 
 // ============================================================================
-// Ana Sayfa Koleksiyon Kartları (Solda değil, doğrudan Ana Sayfada!)
+// Ana Sayfa Koleksiyon & AI Discovery Kartları
 // ============================================================================
 const COLLECTIONS = [
   {
     id: "global-hits",
-    title: "Global Hit 2026",
-    subtitle: "Dünya çapında zirvedeki parçalar",
+    title: "COSMIC DRIFT",
+    subtitle: "Global Hit & Trend 2026",
     query: "top global hits 2026",
-    gradient: "from-orange-500 via-rose-600 to-purple-800",
-    badge: "TREND #1",
+    gradient: "from-sky-500 via-indigo-600 to-purple-800",
+    badge: "SMART PLAYLIST",
     icon: Flame,
-    cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80",
+    cover: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80",
   },
   {
     id: "tr-pop",
-    title: "Türkçe Pop & Hit",
-    subtitle: "Yerli sahnenin en çok dinlenenleri",
+    title: "NEON PULSE",
+    subtitle: "Türkçe Pop & Hit",
     query: "türkçe pop hit şarkılar 2026",
-    gradient: "from-rose-500 via-pink-600 to-indigo-800",
-    badge: "POPÜLER",
+    gradient: "from-cyan-500 via-purple-600 to-indigo-900",
+    badge: "POPÜLER MİKS",
     icon: Sparkles,
     cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80",
   },
   {
     id: "synthwave",
-    title: "Nightdrive Synthwave",
-    subtitle: "Gece sürüşü, neon ve retro-fütürizm",
+    title: "STARGAZER",
+    subtitle: "Nightdrive Synthwave",
     query: "synthwave retrowave nightdrive mix",
     gradient: "from-fuchsia-600 via-purple-700 to-slate-900",
-    badge: "NEON",
+    badge: "RETROWAVE",
     icon: Zap,
-    cover: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80",
+    cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80",
   },
   {
     id: "lofi-focus",
-    title: "Lo-Fi Derin Odak",
-    subtitle: "Kodlama ve çalışma için pürüzsüz ritimler",
+    title: "ASTRAL FOCUS",
+    subtitle: "Lo-Fi Derin Odak",
     query: "lofi hip hop chill beats study",
-    gradient: "from-amber-500 via-orange-700 to-stone-900",
-    badge: "CHILL",
+    gradient: "from-teal-500 via-cyan-700 to-slate-900",
+    badge: "CHILL AI",
     icon: Headphones,
     cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80",
   },
+];
+
+const GENRE_PILLS = [
   {
-    id: "tr-rap",
-    title: "Türkçe Rap Sokak",
-    subtitle: "Sert beatler ve yeni nesil lirikler",
-    query: "türkçe rap hit şarkılar",
-    gradient: "from-emerald-500 via-teal-700 to-zinc-900",
-    badge: "HİPHOP",
-    icon: Radio,
-    cover: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&q=80",
+    id: "tr-pop",
+    label: "Türkçe Pop",
+    query: "türkçe pop hit şarkılar 2026",
+    style:
+      "border-sky-400/60 bg-sky-500/15 text-sky-100 shadow-[0_0_16px_rgba(56,189,248,0.28)] hover:bg-sky-500/25 hover:border-sky-300",
   },
   {
-    id: "rock-legends",
-    title: "Rock Efsaneleri",
-    subtitle: "Zamansız gitar soloları ve klasikler",
-    query: "classic rock greatest hits",
-    gradient: "from-red-600 via-rose-800 to-neutral-950",
-    badge: "KLASİK",
-    icon: Disc3,
-    cover: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=500&q=80",
+    id: "alt-rock",
+    label: "Alternatif Rock",
+    query: "türkçe alternatif rock en iyiler",
+    style:
+      "border-purple-400/60 bg-purple-500/15 text-purple-100 shadow-[0_0_16px_rgba(168,85,247,0.28)] hover:bg-purple-500/25 hover:border-purple-300",
+  },
+  {
+    id: "tr-rap",
+    label: "Türkçe Rap",
+    query: "türkçe rap hit şarkılar",
+    style:
+      "border-pink-400/60 bg-pink-500/15 text-pink-100 shadow-[0_0_16px_rgba(244,114,182,0.28)] hover:bg-pink-500/25 hover:border-pink-300",
+  },
+  {
+    id: "synthwave",
+    label: "Synthwave",
+    query: "synthwave retrowave nightdrive mix",
+    style:
+      "border-indigo-400/60 bg-indigo-500/15 text-indigo-100 shadow-[0_0_16px_rgba(129,140,248,0.28)] hover:bg-indigo-500/25 hover:border-indigo-300",
+  },
+  {
+    id: "anadolu-rock",
+    label: "Anadolu Rock",
+    query: "anadolu rock efsaneleri",
+    style:
+      "border-emerald-400/60 bg-emerald-500/15 text-emerald-100 shadow-[0_0_18px_rgba(52,211,153,0.32)] hover:bg-emerald-500/25 hover:border-emerald-300",
+  },
+  {
+    id: "lofi",
+    label: "Lo-Fi Chill",
+    query: "lofi hip hop chill beats",
+    style:
+      "border-cyan-400/50 bg-cyan-500/15 text-cyan-100 shadow-[0_0_16px_rgba(34,211,238,0.25)] hover:bg-cyan-500/25 hover:border-cyan-300",
+  },
+  {
+    id: "acoustic",
+    label: "Akustik",
+    query: "türkçe akustik şarkılar",
+    style:
+      "border-violet-400/50 bg-violet-500/15 text-violet-100 shadow-[0_0_16px_rgba(139,92,246,0.25)] hover:bg-violet-500/25 hover:border-violet-300",
+  },
+];
+
+const FEATURED_ARTISTS = [
+  {
+    name: "Adamlar",
+    sub: "ALTERNATİF ROCK",
+    avatar: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=240&q=80",
+  },
+  {
+    name: "Semicenk",
+    sub: "TÜRKÇE POP",
+    avatar: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=240&q=80",
+  },
+  {
+    name: "Funda Arar",
+    sub: "POP & ARABESK",
+    avatar: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=240&q=80",
+  },
+  {
+    name: "The Weeknd",
+    sub: "SYNTH POP",
+    avatar: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=240&q=80",
+  },
+  {
+    name: "Duman",
+    sub: "ROCK EFSANESİ",
+    avatar: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=240&q=80",
+  },
+  {
+    name: "Sezen Aksu",
+    sub: "TÜRKÇE POP",
+    avatar: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=240&q=80",
+  },
+  {
+    name: "UZI",
+    sub: "TÜRKÇE RAP",
+    avatar: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=240&q=80",
+  },
+  {
+    name: "Motive",
+    sub: "MELODİK RAP",
+    avatar: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=240&q=80",
   },
 ];
 
@@ -603,11 +681,6 @@ export default function HeliosApp() {
         const list = Array.isArray(results) ? results : [];
         searchMemoryCache.set(cacheKey, list);
         setTracks(list);
-
-        // İlk şarkıyı arka planda sessizce hazırla (tıkladığında 0 sn gecikmeyle başlasın!)
-        if (list[0]?.id) {
-          tauriInvoke("prepare_track", { id: list[0].id }).catch(() => {});
-        }
       } catch (err) {
         showToast(`Arama hatası: ${err?.message || err}`, true);
         setTracks([]);
@@ -651,9 +724,6 @@ export default function HeliosApp() {
 
         searchMemoryCache.set(cacheKey, finalTracks);
         setArtistTracks(finalTracks);
-        if (finalTracks[0]?.id) {
-          tauriInvoke("prepare_track", { id: finalTracks[0].id }).catch(() => {});
-        }
       } catch (err) {
         showToast(`Sanatçı sayfası yüklenemedi: ${err?.message || err}`, true);
         setArtistTracks([]);
@@ -844,14 +914,10 @@ export default function HeliosApp() {
         setIsPlaying(true);
         refreshCacheInfo();
 
-        // Sıradaki 2 parçayı arka planda hazırla (geçişlerde 0 bekleme!)
+        // Yalnızca sıradaki 1 parçayı arka planda hazırla (gereksiz önbellek şişmesini önler)
         const nextIdx1 = index + 1;
-        const nextIdx2 = index + 2;
         if (targetQueue[nextIdx1]?.id) {
           tauriInvoke("prepare_track", { id: targetQueue[nextIdx1].id }).catch(() => {});
-        }
-        if (targetQueue[nextIdx2]?.id) {
-          tauriInvoke("prepare_track", { id: targetQueue[nextIdx2].id }).catch(() => {});
         }
       } catch (err) {
         if (token !== loadTokenRef.current) return;
@@ -1605,772 +1671,1071 @@ export default function HeliosApp() {
     }
   }, [activeLyricIndex, activeView]);
 
+  const [discoveryIdx, setDiscoveryIdx] = useState(0);
+  const [artistPageIdx, setArtistPageIdx] = useState(0);
+  const [isUpNextCardOpen, setIsUpNextCardOpen] = useState(true);
+
+  const recentArtistPair = useMemo(() => {
+    const names = [];
+    for (const t of [...recentTracks, ...likedTracks]) {
+      for (const a of splitArtists(t?.artist)) {
+        if (a && !names.includes(a)) names.push(a);
+        if (names.length >= 2) break;
+      }
+      if (names.length >= 2) break;
+    }
+    if (names.length === 0) return ["ADAM LAR", "SEMİCENK"];
+    if (names.length === 1) return [names[0], "FUNDA ARAR"];
+    return [names[0], names[1]];
+  }, [recentTracks, likedTracks]);
+
+  const activeSlide = COLLECTIONS[discoveryIdx % COLLECTIONS.length] || COLLECTIONS[0];
+  const visibleFeaturedArtists = useMemo(() => {
+    const start = (artistPageIdx * 4) % FEATURED_ARTISTS.length;
+    return FEATURED_ARTISTS.slice(start, start + 4);
+  }, [artistPageIdx]);
+
   return (
-    <div className="relative h-screen w-screen overflow-hidden flex flex-col bg-[#09090B] text-zinc-100 select-none">
-      {/* Dinamik Arka Plan Ortam Işığı */}
+    <div className="relative h-screen w-screen overflow-hidden flex flex-col bg-[#080d1a] text-slate-100 select-none">
+      {/* Kozmik Aurora Arka Plan Efektleri (Synthesia Teması) */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
         <div
-          className="absolute -top-32 -left-32 w-[520px] h-[520px] rounded-full blur-[130px] opacity-25 transition-all duration-1000"
+          className="absolute -top-36 left-1/4 w-[620px] h-[420px] rounded-full blur-[140px] opacity-30 cosmic-glow"
           style={{
-            background: currentTrack
-              ? "radial-gradient(circle, #F06B3C 0%, #9333EA 70%, transparent 100%)"
-              : "radial-gradient(circle, #F06B3C 0%, transparent 75%)",
+            background:
+              "radial-gradient(circle, rgba(56,189,248,0.55) 0%, rgba(139,92,246,0.35) 55%, transparent 100%)",
           }}
         />
-        <div className="absolute -bottom-40 right-0 w-[460px] h-[460px] rounded-full bg-indigo-600/15 blur-[140px]" />
+        <div
+          className="absolute -bottom-36 -left-20 w-[520px] h-[520px] rounded-full blur-[130px] opacity-30"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(168,85,247,0.45) 0%, rgba(45,212,191,0.35) 60%, transparent 100%)",
+          }}
+        />
+        <div
+          className="absolute top-1/4 -right-24 w-[500px] h-[500px] rounded-full blur-[150px] opacity-25"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(34,211,238,0.5) 0%, rgba(99,102,241,0.35) 65%, transparent 100%)",
+          }}
+        />
       </div>
 
-      {/* ===== ÜST PENCERE ÇUBUĞU (Tauri Frameless Titlebar) ===== */}
-      <header
-        data-tauri-drag-region
-        className="relative z-30 h-11 px-4 flex items-center justify-between border-b border-white/[0.06] bg-zinc-950/70 backdrop-blur-xl shrink-0"
-      >
-        <div data-tauri-drag-region className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsLeftSidebarOpen((v) => !v)}
-            className={`w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${
-              isLeftSidebarOpen
-                ? "bg-white/[0.06] text-zinc-200 border-white/10 hover:bg-white/10"
-                : "bg-[#F06B3C]/20 text-[#F06B3C] border-[#F06B3C]/40 hover:bg-[#F06B3C]/30"
-            }`}
-            title={isLeftSidebarOpen ? "Sol Menüyü Kapat" : "Sol Menüyü Aç"}
-          >
-            {isLeftSidebarOpen ? (
-              <PanelLeftClose size={14} />
-            ) : (
-              <PanelLeftOpen size={14} />
-            )}
-          </button>
-
-          <div className="w-7 h-7 rounded-lg overflow-hidden bg-zinc-900 border border-white/15 flex items-center justify-center shadow-lg shadow-orange-500/20">
-            <img
-              src="/mihon-logo.jpg"
-              alt="Mihon"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <span className="font-extrabold tracking-wide text-sm text-white">
-            Mihon
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              const next = !discordEnabled;
-              setDiscordEnabled(next);
-              showToast(
-                next
-                  ? "Discord Rich Presence aktif edildi"
-                  : "Discord Rich Presence kapatıldı"
-              );
-            }}
-            className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-0.5 rounded-full border transition-all ${
-              discordEnabled
-                ? "bg-[#5865F2]/20 text-[#99AAB5] hover:text-white border-[#5865F2]/40"
-                : "bg-white/[0.04] text-zinc-500 border-white/10"
-            }`}
-            title="Discord Rich Presence Durumu (Aç/Kapat)"
-          >
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${
-                discordEnabled && discordConnected
-                  ? "bg-emerald-400 animate-pulse"
-                  : discordEnabled
-                  ? "bg-[#5865F2]"
-                  : "bg-zinc-600"
-              }`}
-            />
-            <span className="text-indigo-300">Discord RPC</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleCheckOrInstallUpdate}
-            disabled={isCheckingUpdate || isInstallingUpdate}
-            className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-0.5 rounded-full border transition-all ${
-              updateInfo?.has_update
-                ? "bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border-emerald-500/40 animate-pulse"
-                : "bg-white/[0.04] text-zinc-400 hover:text-white border-white/10"
-            }`}
-            title="GitHub Üzerinden Güncelleme Kontrolü"
-          >
-            {isCheckingUpdate || isInstallingUpdate ? (
-              <Loader2 size={11} className="animate-spin text-[#F06B3C]" />
-            ) : (
-              <Zap
-                size={11}
-                className={
-                  updateInfo?.has_update ? "text-emerald-400" : "text-[#F06B3C]"
-                }
-              />
-            )}
-            <span>
-              {isInstallingUpdate
-                ? "Güncelleniyor..."
-                : isCheckingUpdate
-                ? "Kontrol Ediliyor..."
-                : updateInfo?.has_update
-                ? `Güncelle (v${updateInfo.latest_version})`
-                : `v${updateInfo?.current_version || "2.1.0"} • Güncelleme Kontrol`}
-            </span>
-          </button>
-        </div>
-
-        {/* Hızlı Üst Arama Çubuğu */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!searchQuery.trim()) return;
-            setActiveView("home");
-            performSearch(
-              searchQuery,
-              `“${searchQuery.trim()}”`,
-              "YouTube Music anlık arama sonuçları"
-            );
-          }}
-          className="flex items-center gap-2 w-full max-w-md mx-4 px-3.5 py-1.5 rounded-full bg-white/[0.05] hover:bg-white/[0.08] focus-within:bg-zinc-900 focus-within:ring-2 focus-within:ring-[#F06B3C]/60 border border-white/[0.08] transition-all"
-        >
-          <Search size={15} className="text-zinc-400 shrink-0" />
-          <input
-            ref={searchInputRef}
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Şarkı, sanatçı veya albüm ara... (Ctrl+K)"
-            className="w-full bg-transparent text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery("")}
-              className="text-zinc-500 hover:text-zinc-200"
-            >
-              <X size={13} />
-            </button>
-          )}
-        </form>
-
-        {/* Pencere Kontrolleri */}
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setIsRightSidebarOpen((v) => !v)}
-            className={`w-8 h-7 mr-1 rounded-lg flex items-center justify-center border transition-all ${
-              isRightSidebarOpen
-                ? "bg-white/[0.06] text-zinc-200 border-white/10 hover:bg-white/10"
-                : "bg-[#F06B3C]/20 text-[#F06B3C] border-[#F06B3C]/40 hover:bg-[#F06B3C]/30"
-            }`}
-            title={isRightSidebarOpen ? "Sağ Paneli Kapat" : "Sağ Paneli Aç"}
-          >
-            {isRightSidebarOpen ? (
-              <PanelRightClose size={14} />
-            ) : (
-              <PanelRightOpen size={14} />
-            )}
-          </button>
-
-          <button
-            onClick={() => tauriInvoke("minimize_window").catch(() => {})}
-            className="w-8 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
-            title="Küçült"
-          >
-            <Minus size={14} />
-          </button>
-          <button
-            onClick={() => tauriInvoke("toggle_maximize").catch(() => {})}
-            className="w-8 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
-            title="Büyüt"
-          >
-            <Square size={12} />
-          </button>
-          <button
-            onClick={() => tauriInvoke("close_window").catch(() => {})}
-            className="w-8 h-7 rounded-lg hover:bg-rose-600 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
-            title="Kapat"
-          >
-            <X size={15} />
-          </button>
-        </div>
-      </header>
-
-      {/* ===== ORTA ALAN (Sol Minimal Menü + Ana İçerik + Sağ Kuyruk) ===== */}
-      <div className="relative z-10 flex-1 flex min-h-0 gap-2.5 p-2.5 pb-0">
-        {/* SOL KENAR ÇUBUĞU (Açılır / Kapanır) */}
+      {/* ===== ANA 3 SÜTUNLU SYNTHESIA PENCERE DÜZENİ ===== */}
+      <div className="relative z-10 flex-1 flex min-h-0 overflow-hidden">
+        {/* 1. SOL SÜTUN: SYNTHESIA KENAR ÇUBUĞU (M I H O N) */}
         {isLeftSidebarOpen ? (
-          <aside className="w-60 shrink-0 rounded-2xl bg-zinc-900/60 border border-white/[0.07] backdrop-blur-2xl flex flex-col justify-between p-3 transition-all">
-            <div className="space-y-4 min-h-0 flex-1 flex flex-col">
-              <div className="flex items-center justify-between px-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
-                  MENÜ & KÜTÜPHANE
+          <aside className="relative w-60 shrink-0 bg-[#0b1222]/90 border-r border-white/[0.07] backdrop-blur-2xl flex flex-col justify-between overflow-hidden">
+            {/* Sol Alt Kozmik Dalga Grafiği (Görseldeki Aurora Dalgaları) */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-56 overflow-hidden opacity-45">
+              <div className="absolute -bottom-12 -left-10 w-64 h-64 rounded-full bg-gradient-to-tr from-purple-600/40 via-cyan-400/30 to-transparent blur-2xl" />
+              <svg
+                viewBox="0 0 240 180"
+                fill="none"
+                className="absolute bottom-0 left-0 w-full h-44"
+              >
+                <path
+                  d="M-20 180 C 30 90, 110 140, 260 40 L 260 180 Z"
+                  fill="url(#mihonWave1)"
+                  fillOpacity="0.28"
+                />
+                <path
+                  d="M-20 180 C 60 120, 140 70, 260 110 L 260 180 Z"
+                  fill="url(#mihonWave2)"
+                  fillOpacity="0.22"
+                />
+                <defs>
+                  <linearGradient id="mihonWave1" x1="0" y1="0" x2="240" y2="180" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#a855f7" />
+                    <stop offset="50%" stopColor="#38bdf8" />
+                    <stop offset="100%" stopColor="#2dd4bf" />
+                  </linearGradient>
+                  <linearGradient id="mihonWave2" x1="240" y1="0" x2="0" y2="180" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#22d3ee" />
+                    <stop offset="100%" stopColor="#6366f1" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+
+            <div className="relative z-10 flex flex-col flex-1 min-h-0 p-4">
+              {/* Üst Marka Başlığı: M I H O N */}
+              <div
+                data-tauri-drag-region
+                className="flex items-center justify-between pt-1 pb-6 px-2"
+              >
+                <span
+                  data-tauri-drag-region
+                  className="text-lg font-light tracking-[0.34em] uppercase text-slate-100 drop-shadow-[0_0_12px_rgba(56,189,248,0.35)]"
+                >
+                  MIHON
                 </span>
                 <button
                   type="button"
                   onClick={() => setIsLeftSidebarOpen(false)}
-                  className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
-                  title="Sol Paneli Gizle"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-300 hover:bg-white/[0.06] transition-colors"
+                  title="Sol Menüyü Gizle"
                 >
-                  <ChevronLeft size={14} />
+                  <PanelLeftClose size={14} />
                 </button>
               </div>
-              {/* Ana Menü */}
-              <nav className="space-y-1">
-              <button
-                onClick={() => setActiveView("home")}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                  activeView === "home"
-                    ? "bg-[#F06B3C] text-white shadow-lg shadow-orange-500/20"
-                    : "text-zinc-400 hover:text-white hover:bg-white/[0.05]"
-                }`}
-              >
-                <Compass size={17} />
-                <span>Ana Sayfa & Koleksiyonlar</span>
-              </button>
 
-              <button
-                onClick={(e) => openSimilarRecommendations(currentTrack, e)}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                  activeView === "recommendations"
-                    ? "bg-gradient-to-r from-[#F06B3C] to-purple-600 text-white shadow-lg shadow-orange-500/20"
-                    : "text-zinc-300 hover:text-white hover:bg-white/[0.05]"
-                }`}
-              >
-                <span className="flex items-center gap-3">
-                  <Sparkles size={17} className="text-[#F06B3C]" />
-                  <span>Aynı Türde Öneriler</span>
-                </span>
-                <span className="px-1.5 py-0.5 text-[9px] font-extrabold rounded-full bg-[#F06B3C]/20 text-[#F06B3C]">
-                  AI
-                </span>
-              </button>
+              {/* Ana Gezinme Menüsü (Parlayan Cyan Sol Çizgi ile) */}
+              <nav className="space-y-1.5">
+                <button
+                  onClick={() => setActiveView("home")}
+                  className={`w-full flex items-center gap-3.5 px-4 py-2.5 rounded-r-xl text-xs font-semibold tracking-[0.12em] uppercase transition-all ${
+                    activeView === "home"
+                      ? "border-l-[3px] border-cyan-400 bg-gradient-to-r from-cyan-500/20 via-slate-800/70 to-slate-800/20 text-white shadow-[0_4px_20px_rgba(56,189,248,0.12)]"
+                      : "border-l-[3px] border-transparent text-slate-400 hover:text-slate-100 hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <Home
+                    size={16}
+                    className={
+                      activeView === "home"
+                        ? "text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]"
+                        : "text-slate-400"
+                    }
+                  />
+                  <span>HOME</span>
+                </button>
 
-              <button
-                onClick={() => setActiveView("liked")}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                  activeView === "liked"
-                    ? "bg-[#F06B3C] text-white shadow-lg shadow-orange-500/20"
-                    : "text-zinc-400 hover:text-white hover:bg-white/[0.05]"
-                }`}
-              >
-                <span className="flex items-center gap-3">
-                  <Heart size={17} />
-                  <span>Beğenilen Şarkılar</span>
-                </span>
-                {likedTracks.length > 0 && (
-                  <span className="px-2 py-0.5 text-[10px] rounded-full bg-black/25">
-                    {likedTracks.length}
+                <button
+                  onClick={(e) => openSimilarRecommendations(currentTrack, e)}
+                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-r-xl text-xs font-semibold tracking-[0.12em] uppercase transition-all ${
+                    activeView === "recommendations"
+                      ? "border-l-[3px] border-cyan-400 bg-gradient-to-r from-cyan-500/20 via-slate-800/70 to-slate-800/20 text-white shadow-[0_4px_20px_rgba(56,189,248,0.12)]"
+                      : "border-l-[3px] border-transparent text-slate-400 hover:text-slate-100 hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <span className="flex items-center gap-3.5">
+                    <Compass
+                      size={16}
+                      className={
+                        activeView === "recommendations"
+                          ? "text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]"
+                          : "text-slate-400"
+                      }
+                    />
+                    <span>DISCOVER</span>
                   </span>
-                )}
-              </button>
-
-              <button
-                onClick={() => setActiveView("recent")}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                  activeView === "recent"
-                    ? "bg-[#F06B3C] text-white shadow-lg shadow-orange-500/20"
-                    : "text-zinc-400 hover:text-white hover:bg-white/[0.05]"
-                }`}
-              >
-                <span className="flex items-center gap-3">
-                  <Clock size={17} />
-                  <span>Son Çalınanlar</span>
-                </span>
-                {recentTracks.length > 0 && (
-                  <span className="px-2 py-0.5 text-[10px] rounded-full bg-black/25">
-                    {recentTracks.length}
+                  <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+                    AI
                   </span>
-                )}
-              </button>
+                </button>
 
-              <button
-                onClick={() => setActiveView("playlists")}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                  activeView === "playlists"
-                    ? "bg-[#F06B3C] text-white shadow-lg shadow-orange-500/20"
-                    : "text-zinc-400 hover:text-white hover:bg-white/[0.05]"
-                }`}
-              >
-                <span className="flex items-center gap-3">
-                  <ListMusic size={17} />
-                  <span>Çalma Listelerim</span>
-                </span>
-                <span className="px-2 py-0.5 text-[10px] rounded-full bg-black/25">
-                  {customPlaylists.length}
-                </span>
-              </button>
-            </nav>
+                <button
+                  onClick={() => setActiveView("liked")}
+                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-r-xl text-xs font-semibold tracking-[0.12em] uppercase transition-all ${
+                    activeView === "liked"
+                      ? "border-l-[3px] border-cyan-400 bg-gradient-to-r from-cyan-500/20 via-slate-800/70 to-slate-800/20 text-white shadow-[0_4px_20px_rgba(56,189,248,0.12)]"
+                      : "border-l-[3px] border-transparent text-slate-400 hover:text-slate-100 hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <span className="flex items-center gap-3.5">
+                    <Heart
+                      size={16}
+                      className={
+                        activeView === "liked"
+                          ? "text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]"
+                          : "text-slate-400"
+                      }
+                    />
+                    <span>BEĞENİLENLER</span>
+                  </span>
+                  {likedTracks.length > 0 && (
+                    <span className="text-[10px] text-slate-400 font-bold">
+                      {likedTracks.length}
+                    </span>
+                  )}
+                </button>
 
-            {/* Özel Çalma Listeleri Bölümü */}
-            <div className="pt-3 border-t border-white/[0.07] flex-1 flex flex-col min-h-0">
-              <div className="flex items-center justify-between px-2 mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
-                  LİSTELERİM
-                </span>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setIsSpotifyModalOpen(true)}
-                    className="flex items-center gap-1 text-[10px] font-bold text-[#1DB954] hover:text-emerald-300 px-2 py-1 rounded-lg bg-[#1DB954]/15 hover:bg-[#1DB954]/25 border border-[#1DB954]/30 transition-colors"
-                    title="Spotify'daki Listelerimi Aktar"
-                  >
-                    <Disc3 size={12} />
-                    <span>Spotify Aktar</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setTrackForPlaylistModal(null);
-                      setNewPlaylistName("");
-                      setIsCreateModalOpen(true);
-                    }}
-                    className="flex items-center gap-1 text-[11px] font-semibold text-[#F06B3C] hover:text-orange-300 px-2 py-1 rounded-lg bg-[#F06B3C]/10 hover:bg-[#F06B3C]/20 transition-colors"
-                    title="Yeni Liste Oluştur"
-                  >
-                    <Plus size={13} />
-                  </button>
+                <button
+                  onClick={() => setActiveView("recent")}
+                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-r-xl text-xs font-semibold tracking-[0.12em] uppercase transition-all ${
+                    activeView === "recent"
+                      ? "border-l-[3px] border-cyan-400 bg-gradient-to-r from-cyan-500/20 via-slate-800/70 to-slate-800/20 text-white shadow-[0_4px_20px_rgba(56,189,248,0.12)]"
+                      : "border-l-[3px] border-transparent text-slate-400 hover:text-slate-100 hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <span className="flex items-center gap-3.5">
+                    <Clock
+                      size={16}
+                      className={
+                        activeView === "recent"
+                          ? "text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]"
+                          : "text-slate-400"
+                      }
+                    />
+                    <span>GEÇMİŞ</span>
+                  </span>
+                  {recentTracks.length > 0 && (
+                    <span className="text-[10px] text-slate-400 font-bold">
+                      {recentTracks.length}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setActiveView("playlists")}
+                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-r-xl text-xs font-semibold tracking-[0.12em] uppercase transition-all ${
+                    activeView === "playlists"
+                      ? "border-l-[3px] border-cyan-400 bg-gradient-to-r from-cyan-500/20 via-slate-800/70 to-slate-800/20 text-white shadow-[0_4px_20px_rgba(56,189,248,0.12)]"
+                      : "border-l-[3px] border-transparent text-slate-400 hover:text-slate-100 hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <span className="flex items-center gap-3.5">
+                    <ListMusic
+                      size={16}
+                      className={
+                        activeView === "playlists"
+                          ? "text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]"
+                          : "text-slate-400"
+                      }
+                    />
+                    <span>LIBRARY</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-bold">
+                    {customPlaylists.length}
+                  </span>
+                </button>
+              </nav>
+
+              {/* PLAYLISTS Bölümü (Görseldeki İkonlu Liste Yapısı) */}
+              <div className="mt-6 pt-5 border-t border-white/[0.07] flex-1 flex flex-col min-h-0">
+                <div className="flex items-center justify-between px-2 mb-3">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    PLAYLISTS
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setIsSpotifyModalOpen(true)}
+                      className="flex items-center gap-1 text-[10px] font-bold text-emerald-300 hover:text-white px-2 py-0.5 rounded-md bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 transition-colors"
+                      title="Spotify Listelerimi Aktar"
+                    >
+                      <Disc3 size={11} />
+                      <span>Spotify</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setTrackForPlaylistModal(null);
+                        setNewPlaylistName("");
+                        setIsCreateModalOpen(true);
+                      }}
+                      className="p-1 rounded-md text-cyan-300 hover:text-white bg-cyan-500/10 hover:bg-cyan-500/25 border border-cyan-400/25 transition-colors"
+                      title="Yeni Çalma Listesi Oluştur"
+                    >
+                      <Plus size={13} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto space-y-1 pr-1">
+                  {customPlaylists.length === 0 ? (
+                    <button
+                      onClick={() => {
+                        setTrackForPlaylistModal(null);
+                        setNewPlaylistName("");
+                        setIsCreateModalOpen(true);
+                      }}
+                      className="w-full p-3 rounded-xl border border-dashed border-white/10 hover:border-cyan-400/40 text-left transition-colors group"
+                    >
+                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-300 group-hover:text-cyan-300">
+                        <FolderPlus size={14} />
+                        <span>İlk Listeni Oluştur</span>
+                      </div>
+                    </button>
+                  ) : (
+                    customPlaylists.map((pl, idx) => {
+                      const isSelected =
+                        activeView === "playlist-detail" && selectedPlaylistId === pl.id;
+                      const PlaylistIcon =
+                        idx % 3 === 0 ? Music2 : idx % 3 === 1 ? Sparkles : ListMusic;
+                      return (
+                        <div
+                          key={pl.id}
+                          onClick={() => {
+                            setSelectedPlaylistId(pl.id);
+                            setActiveView("playlist-detail");
+                          }}
+                          className={`group flex items-center gap-3 px-2.5 py-2 rounded-xl cursor-pointer transition-all ${
+                            isSelected
+                              ? "bg-cyan-500/15 text-white border border-cyan-400/30"
+                              : "hover:bg-white/[0.05] text-slate-300 border border-transparent"
+                          }`}
+                        >
+                          <PlaylistIcon
+                            size={15}
+                            className={
+                              isSelected
+                                ? "text-cyan-400 shrink-0"
+                                : "text-slate-400 group-hover:text-cyan-300 shrink-0"
+                            }
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate">{pl.name}</p>
+                            <p className="text-[10px] text-slate-500">
+                              {pl.tracks.length} parça
+                            </p>
+                          </div>
+                          <button
+                            onClick={(e) => handleDeletePlaylist(pl.id, e)}
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
+                            title="Listeyi Sil"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto space-y-1 pr-1">
-                {customPlaylists.length === 0 ? (
-                  <button
-                    onClick={() => {
-                      setTrackForPlaylistModal(null);
-                      setNewPlaylistName("");
-                      setIsCreateModalOpen(true);
-                    }}
-                    className="w-full p-3 rounded-xl border border-dashed border-white/10 hover:border-[#F06B3C]/50 text-left transition-colors group"
-                  >
-                    <div className="flex items-center gap-2 text-xs font-semibold text-zinc-300 group-hover:text-[#F06B3C]">
-                      <FolderPlus size={15} />
-                      <span>İlk Listeni Oluştur</span>
-                    </div>
-                    <p className="text-[11px] text-zinc-500 mt-1">
-                      Şarkıları listelerine ekleyip yönetebilirsin.
+              {/* Alt Önbellek (350 MB Akıllı LRU) Kartı */}
+              <div className="mt-3 p-2.5 rounded-xl bg-[#0f172a]/80 border border-white/[0.07] backdrop-blur-xl flex items-center justify-between">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-lg bg-cyan-500/15 border border-cyan-400/30 flex items-center justify-center text-cyan-300 shrink-0">
+                    <HardDrive size={14} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold text-slate-200 truncate">
+                      {formatBytes(cacheStats.bytes)} Önbellek
                     </p>
+                    <p className="text-[10px] text-slate-400">
+                      {cacheStats.files} şarkı hazır
+                    </p>
+                  </div>
+                </div>
+                {cacheStats.files > 0 && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        await tauriInvoke("clear_cache");
+                        refreshCacheInfo();
+                        showToast("Önbellek temizlendi");
+                      } catch (e) {
+                        showToast(String(e), true);
+                      }
+                    }}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                    title="Önbelleği Temizle"
+                  >
+                    <Trash2 size={13} />
                   </button>
-                ) : (
-                  customPlaylists.map((pl) => {
-                    const isSelected =
-                      activeView === "playlist-detail" && selectedPlaylistId === pl.id;
-                    return (
-                      <div
-                        key={pl.id}
-                        onClick={() => {
-                          setSelectedPlaylistId(pl.id);
-                          setActiveView("playlist-detail");
-                        }}
-                        className={`group flex items-center gap-2.5 p-2 rounded-xl cursor-pointer transition-all ${
-                          isSelected
-                            ? "bg-white/10 text-white"
-                            : "hover:bg-white/[0.05] text-zinc-300"
-                        }`}
-                      >
-                        <TrackArtwork
-                          track={pl.tracks[0]}
-                          className="w-9 h-9 rounded-lg"
-                          iconSize={15}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold truncate">{pl.name}</p>
-                          <p className="text-[10px] text-zinc-500">
-                            {pl.tracks.length} şarkı
-                          </p>
-                        </div>
-                        <button
-                          onClick={(e) => handleDeletePlaylist(pl.id, e)}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
-                          title="Listeyi Sil"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    );
-                  })
                 )}
               </div>
             </div>
-          </div>
-
-          {/* Alt Önbellek Kartı */}
-          <div className="mt-3 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
-                <HardDrive size={15} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-bold text-zinc-200 truncate">
-                  {formatBytes(cacheStats.bytes)} Önbellek
-                </p>
-                <p className="text-[10px] text-zinc-500">
-                  {cacheStats.files} şarkı hazır
-                </p>
-              </div>
-            </div>
-            {cacheStats.files > 0 && (
-              <button
-                onClick={async () => {
-                  try {
-                    await tauriInvoke("clear_cache");
-                    refreshCacheInfo();
-                    showToast("Önbellek temizlendi");
-                  } catch (e) {
-                    showToast(String(e), true);
-                  }
-                }}
-                className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                title="Önbelleği Temizle"
-              >
-                <Trash2 size={14} />
-              </button>
-            )}
-          </div>
-        </aside>
+          </aside>
         ) : (
           <button
             type="button"
             onClick={() => setIsLeftSidebarOpen(true)}
-            className="w-7 shrink-0 rounded-2xl bg-zinc-900/60 hover:bg-zinc-800/80 border border-white/[0.07] hover:border-[#F06B3C]/40 flex flex-col items-center justify-center gap-2 text-zinc-400 hover:text-[#F06B3C] transition-all group"
+            className="w-8 shrink-0 bg-[#0b1222]/90 hover:bg-[#111c35] border-r border-white/[0.07] flex flex-col items-center justify-center gap-2 text-slate-400 hover:text-cyan-300 transition-all group"
             title="Sol Menüyü Aç"
           >
-            <ChevronRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
+            <PanelLeftOpen size={15} />
           </button>
         )}
 
-        {/* ===== ANA İÇERİK PANELİ ===== */}
-        <main
-          ref={mainScrollRef}
-          className="flex-1 rounded-2xl bg-zinc-900/50 border border-white/[0.07] backdrop-blur-2xl overflow-y-auto px-6 py-5 space-y-7"
-        >
-          {/* SANATÇI ÖZEL SAYFASI (Örn: UZI, Lvbel C5, Motive vb. tıklandığında) */}
-          {activeView === "artist" && (
-            <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-[#F06B3C]/25 via-zinc-900 to-zinc-950 p-6 shadow-2xl">
-              <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-                <div className="flex items-center gap-4">
-                  <TrackArtwork
-                    track={artistTracks[0]}
-                    className="w-20 h-20 rounded-2xl shadow-2xl border-2 border-[#F06B3C]/40"
-                    iconSize={32}
-                  />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wider bg-[#F06B3C] text-white">
-                        DOĞRULANMIŞ SANATÇI
-                      </span>
-                      <button
-                        onClick={() => setActiveView("home")}
-                        className="text-xs font-semibold text-zinc-400 hover:text-white underline"
-                      >
-                        ← Ana Sayfaya Dön
-                      </button>
-                    </div>
-                    <h1 className="text-3xl font-black tracking-tight text-white mt-1">
-                      {selectedArtistName}
-                    </h1>
-                    <p className="text-xs text-zinc-300 mt-0.5">
-                      {isLoadingArtist
-                        ? "Sanatçının en popüler parçaları yükleniyor..."
-                        : `${artistTracks.length} popüler parça • Anında çalmaya hazır`}
-                    </p>
-                  </div>
-                </div>
+        {/* 2. ORTA + SAĞ ALAN (Üst Pencere/Arama Çubuğu + İçerik + Sağ NOW PLAYING) */}
+        <div className="flex-1 flex flex-col min-w-0 min-h-0">
+          {/* ÜST ÇUBUK (Görseldeki `< >` Oklar + Arama Çubuğu + Sağ Aksiyonlar & Pencere Kontrolleri) */}
+          <header
+            data-tauri-drag-region
+            className="h-14 px-6 flex items-center justify-between border-b border-white/[0.06] bg-[#0b1222]/60 backdrop-blur-2xl shrink-0"
+          >
+            {/* Sol: Geri / İleri Okları + Arama Kutusu */}
+            <div data-tauri-drag-region className="flex items-center gap-2.5 flex-1 max-w-xl">
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setActiveView("home")}
+                  className="w-7 h-7 rounded-lg bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.07] flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                  title="Ana Sayfa"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => openSimilarRecommendations(currentTrack, e)}
+                  className="w-7 h-7 rounded-lg bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.07] flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                  title="AI Keşif"
+                >
+                  <ChevronRight size={14} />
+                </button>
               </div>
-            </section>
-          )}
 
-          {/* AYNİ TÜRDE AKILLI ŞARKI ÖNERİ SAYFASI */}
-          {activeView === "recommendations" && (
-            <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#F06B3C]/20 via-zinc-900 to-zinc-950 px-5 py-4 shadow-xl">
-              <div className="relative z-10 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                  <TrackArtwork
-                    track={recommendationMeta?.seedTrack || recommendedTracks[0]}
-                    className="w-14 h-14 rounded-xl shadow-lg border border-[#F06B3C]/40 shrink-0"
-                    iconSize={24}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold tracking-wider bg-[#F06B3C] text-white shrink-0">
-                        SONSUZ RADYO
-                      </span>
-                      <span className="text-xs font-semibold text-orange-300 truncate">
-                        {recommendationMeta?.detected_genre}
-                      </span>
-                    </div>
-                    <h1 className="text-lg font-extrabold tracking-tight text-white truncate mt-1">
-                      “{recommendationMeta?.seed_title || "Seçili Şarkı"}” Benzerleri
-                    </h1>
-                    <p className="text-xs text-zinc-400 truncate">
-                      {recommendationMeta?.algorithm_summary}
-                    </p>
-                  </div>
-                </div>
-
-                {recommendedTracks.length > 0 && (
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      onClick={async () => {
-                        const seed =
-                          currentTrack ||
-                          recommendedTracks[recommendedTracks.length - 1] ||
-                          recommendationMeta?.seedTrack;
-                        if (!seed) return;
-                        showToast("Yeni benzer şarkılar ekleniyor...");
-                        await extendQueueWithSimilar(seed, recommendedTracks);
-                      }}
-                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#F06B3C] hover:bg-[#FF8256] text-white text-xs font-bold shadow-lg shadow-orange-500/20 transition-all whitespace-nowrap"
-                    >
-                      <Sparkles size={14} />
-                      <span>+ Daha Fazla Ekle</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        const plName = `${
-                          recommendationMeta?.seed_title || "Benzerler"
-                        } Radyo`;
-                        const created = {
-                          id: `rec_pl_${Date.now()}`,
-                          name: plName,
-                          cover: getTrackCover(recommendedTracks[0]),
-                          tracks: recommendedTracks,
-                          createdAt: Date.now(),
-                        };
-                        saveCustomPlaylists([created, ...customPlaylists]);
-                        showToast(`“${plName}” çalma listelerine kaydedildi!`);
-                      }}
-                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/15 transition-all whitespace-nowrap"
-                    >
-                      <FolderPlus size={14} className="text-[#F06B3C]" />
-                      <span>Listeye Kaydet</span>
-                    </button>
-                  </div>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!searchQuery.trim()) return;
+                  setActiveView("home");
+                  performSearch(
+                    searchQuery,
+                    `“${searchQuery.trim()}”`,
+                    "YouTube Music anlık arama sonuçları"
+                  );
+                }}
+                className="flex items-center gap-2.5 w-full max-w-sm px-3.5 py-1.5 rounded-xl bg-[#141e33]/90 hover:bg-[#19253f] focus-within:bg-[#16223b] focus-within:ring-1 focus-within:ring-cyan-400/60 border border-white/[0.08] transition-all"
+              >
+                <Search size={14} className="text-slate-400 shrink-0" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search / Şarkı veya sanatçı ara..."
+                  className="w-full bg-transparent text-xs text-slate-100 placeholder:text-slate-400 focus:outline-none"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="text-slate-400 hover:text-white"
+                  >
+                    <X size={13} />
+                  </button>
                 )}
+              </form>
+            </div>
+
+            {/* Sağ: Lyrics, Discord RPC, Güncelleme, Profil ve Pencere Kontrolleri */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveView(activeView === "lyrics" ? "home" : "lyrics")
+                }
+                className={`flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all ${
+                  activeView === "lyrics"
+                    ? "bg-cyan-500/20 text-cyan-300 border-cyan-400/50 shadow-[0_0_12px_rgba(34,211,238,0.25)]"
+                    : "bg-white/[0.04] text-slate-300 border-white/10 hover:bg-white/[0.08]"
+                }`}
+                title="Canlı Şarkı Sözleri"
+              >
+                <MicVocal size={13} />
+                <span className="hidden sm:inline">Sözler</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !discordEnabled;
+                  setDiscordEnabled(next);
+                  showToast(
+                    next
+                      ? "Discord Rich Presence aktif edildi"
+                      : "Discord Rich Presence kapatıldı"
+                  );
+                }}
+                className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all ${
+                  discordEnabled
+                    ? "bg-indigo-500/15 text-indigo-200 border-indigo-400/35"
+                    : "bg-white/[0.04] text-slate-500 border-white/10"
+                }`}
+                title="Discord Rich Presence Durumu"
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    discordEnabled && discordConnected
+                      ? "bg-emerald-400 animate-pulse"
+                      : discordEnabled
+                      ? "bg-indigo-400"
+                      : "bg-slate-600"
+                  }`}
+                />
+                <span className="hidden md:inline">Discord</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCheckOrInstallUpdate}
+                disabled={isCheckingUpdate || isInstallingUpdate}
+                className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all ${
+                  updateInfo?.has_update
+                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 animate-pulse"
+                    : "bg-white/[0.04] text-slate-300 hover:text-white border-white/10"
+                }`}
+                title="GitHub Güncelleme Kontrolü"
+              >
+                {isCheckingUpdate || isInstallingUpdate ? (
+                  <Loader2 size={11} className="animate-spin text-cyan-400" />
+                ) : (
+                  <Zap size={11} className="text-cyan-400" />
+                )}
+                <span className="hidden xl:inline">
+                  {isInstallingUpdate
+                    ? "Güncelleniyor..."
+                    : updateInfo?.has_update
+                    ? `v${updateInfo.latest_version}`
+                    : `v${updateInfo?.current_version || "2.1.0"}`}
+                </span>
+              </button>
+
+              {/* Profil Rozeti (Görseldeki Sağ Üst Kullanıcı Alanı) */}
+              <div className="hidden sm:flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08]">
+                <img
+                  src="/mihon-logo.jpg"
+                  alt="Mihon"
+                  className="w-5 h-5 rounded-full object-cover border border-cyan-400/40"
+                />
+                <span className="text-xs font-medium text-slate-200">Mihon</span>
               </div>
-            </section>
-          )}
 
-          {/* ANA SAYFA: KOLEKSİYON KARTLARI (Tam istediğin gibi ana sayfada!) */}
-          {activeView === "home" && (
-            <>
-              <section>
-                <div className="flex items-center justify-between mb-3.5">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#F06B3C]">
-                      KEŞFET & DİNLE
-                    </span>
-                    <h1 className="text-2xl font-extrabold tracking-tight text-white">
-                      Öne Çıkan Koleksiyonlar
-                    </h1>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                    {QUICK_CHIPS.map((chip) => (
-                      <button
-                        key={chip}
-                        onClick={(e) => openArtistPage(chip, e)}
-                        className="px-3 py-1 rounded-full text-[11px] font-semibold bg-white/[0.05] hover:bg-[#F06B3C] text-zinc-300 hover:text-white border border-white/[0.07] transition-all"
-                      >
-                        {chip}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              <button
+                type="button"
+                onClick={() => setIsRightSidebarOpen((v) => !v)}
+                className={`w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${
+                  isRightSidebarOpen
+                    ? "bg-white/[0.05] text-slate-200 border-white/10 hover:bg-white/10"
+                    : "bg-cyan-500/20 text-cyan-300 border-cyan-400/40"
+                }`}
+                title={isRightSidebarOpen ? "Now Playing Panelini Gizle" : "Now Playing Panelini Aç"}
+              >
+                {isRightSidebarOpen ? (
+                  <PanelRightClose size={13} />
+                ) : (
+                  <PanelRightOpen size={13} />
+                )}
+              </button>
 
-                {/* Koleksiyon Kart Izgarası */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                  {COLLECTIONS.map((col) => {
-                    const IconComp = col.icon;
-                    const isSelected =
-                      activeCollection?.id === col.id && sectionTitle === col.title;
-                    return (
-                      <button
-                        key={col.id}
-                        onClick={() => {
-                          setActiveCollection(col);
-                          performSearch(col.query, col.title, col.subtitle);
+              <div className="flex items-center gap-0.5 pl-1 border-l border-white/[0.08]">
+                <button
+                  onClick={() => tauriInvoke("minimize_window").catch(() => {})}
+                  className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                  title="Küçült"
+                >
+                  <Minus size={13} />
+                </button>
+                <button
+                  onClick={() => tauriInvoke("toggle_maximize").catch(() => {})}
+                  className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                  title="Büyüt"
+                >
+                  <Square size={11} />
+                </button>
+                <button
+                  onClick={() => tauriInvoke("close_window").catch(() => {})}
+                  className="w-7 h-7 rounded-lg hover:bg-rose-600 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                  title="Kapat"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            </div>
+          </header>
+
+          {/* ORTA İÇERİK + SAĞ NOW PLAYING PANELİ */}
+          <div className="flex-1 flex min-h-0 overflow-hidden">
+            {/* ===== ORTA ANA SAHNE ===== */}
+            <main
+              ref={mainScrollRef}
+              className="flex-1 overflow-y-auto px-6 py-5 space-y-6"
+            >
+              {/* SANATÇI ÖZEL SAYFASI */}
+              {activeView === "artist" && (
+                <section className="relative overflow-hidden rounded-2xl border border-cyan-400/25 bg-gradient-to-br from-[#13203d] via-[#10182b] to-[#1a1438] p-6 shadow-2xl">
+                  <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+                    <div className="flex items-center gap-4">
+                      <TrackArtwork
+                        track={artistTracks[0]}
+                        className="w-20 h-20 rounded-2xl shadow-[0_0_30px_rgba(56,189,248,0.25)] border border-cyan-400/40"
+                        iconSize={32}
+                      />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-widest bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+                            FEATURED ARTIST
+                          </span>
+                          <button
+                            onClick={() => setActiveView("home")}
+                            className="text-xs font-semibold text-slate-400 hover:text-cyan-300 underline"
+                          >
+                            ← Ana Sayfaya Dön
+                          </button>
+                        </div>
+                        <h1 className="text-3xl font-black tracking-wide uppercase text-white mt-1">
+                          {selectedArtistName}
+                        </h1>
+                        <p className="text-xs text-slate-300 mt-0.5">
+                          {isLoadingArtist
+                            ? "Sanatçının popüler parçaları yükleniyor..."
+                            : `${artistTracks.length} popüler parça • Anında çalmaya hazır`}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* AI ÖNERİ SAYFASI */}
+              {activeView === "recommendations" && (
+                <section className="relative overflow-hidden rounded-2xl border border-cyan-400/25 bg-gradient-to-r from-[#13203d] via-[#151d36] to-[#231942] px-5 py-4 shadow-xl">
+                  <div className="relative z-10 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                      <TrackArtwork
+                        track={recommendationMeta?.seedTrack || recommendedTracks[0]}
+                        className="w-14 h-14 rounded-xl shadow-lg border border-cyan-400/40 shrink-0"
+                        iconSize={24}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shrink-0">
+                            AI DISCOVERY RADIO
+                          </span>
+                          <span className="text-xs font-semibold text-cyan-300 truncate">
+                            {recommendationMeta?.detected_genre}
+                          </span>
+                        </div>
+                        <h1 className="text-lg font-extrabold tracking-tight text-white truncate mt-1">
+                          “{recommendationMeta?.seed_title || "Seçili Şarkı"}” Benzerleri
+                        </h1>
+                        <p className="text-xs text-slate-400 truncate">
+                          {recommendationMeta?.algorithm_summary}
+                        </p>
+                      </div>
+                    </div>
+
+                    {recommendedTracks.length > 0 && (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={async () => {
+                            const seed =
+                              currentTrack ||
+                              recommendedTracks[recommendedTracks.length - 1] ||
+                              recommendationMeta?.seedTrack;
+                            if (!seed) return;
+                            showToast("Yeni benzer şarkılar ekleniyor...");
+                            await extendQueueWithSimilar(seed, recommendedTracks);
+                          }}
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-gradient-to-r from-cyan-400 to-indigo-500 text-slate-950 text-xs font-extrabold shadow-lg shadow-cyan-500/25 transition-all whitespace-nowrap"
+                        >
+                          <Sparkles size={14} />
+                          <span>+ Daha Fazla Ekle</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            const plName = `${
+                              recommendationMeta?.seed_title || "Benzerler"
+                            } Radyo`;
+                            const created = {
+                              id: `rec_pl_${Date.now()}`,
+                              name: plName,
+                              cover: getTrackCover(recommendedTracks[0]),
+                              tracks: recommendedTracks,
+                              createdAt: Date.now(),
+                            };
+                            saveCustomPlaylists([created, ...customPlaylists]);
+                            showToast(`“${plName}” çalma listelerine kaydedildi!`);
+                          }}
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/15 transition-all whitespace-nowrap"
+                        >
+                          <FolderPlus size={14} className="text-cyan-300" />
+                          <span>Listeye Kaydet</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {/* ===== HOME: SYNTHESIA AI DISCOVERY + EXPLORE NEW GENRES + FEATURED ARTISTS ===== */}
+              {activeView === "home" && (
+                <>
+                  {/* 1. AI DISCOVERY HERO CARD (Görseldeki Kozmik Halka Kartı) */}
+                  <section>
+                    <h2 className="text-lg font-medium uppercase tracking-[0.14em] text-white mb-3">
+                      AI DISCOVERY
+                    </h2>
+
+                    <div className="relative overflow-hidden rounded-2xl border border-cyan-300/25 bg-gradient-to-r from-[#131c31] via-[#192340] to-[#231d4c] p-4 sm:p-5 shadow-[0_16px_45px_rgba(0,0,0,0.5)]">
+                      {/* Sağ Aurora Işık Dalgaları */}
+                      <div
+                        className="pointer-events-none absolute -right-10 -bottom-12 w-80 h-56 rounded-full blur-2xl opacity-75"
+                        style={{
+                          background:
+                            "radial-gradient(circle at 70% 70%, #2dd4bf 0%, #38bdf8 38%, #a855f7 72%, transparent 100%)",
                         }}
-                        className={`group relative overflow-hidden rounded-2xl p-3 text-left transition-all duration-300 border ${
-                          isSelected
-                            ? "border-[#F06B3C] ring-2 ring-[#F06B3C]/30 scale-[1.01]"
-                            : "border-white/10 hover:border-white/25 hover:-translate-y-1"
-                        } bg-gradient-to-br ${col.gradient} shadow-xl`}
-                      >
-                        <img
-                          src={col.cover}
-                          alt={col.title}
-                          loading="lazy"
-                          className="absolute inset-0 w-full h-full object-cover opacity-35 group-hover:scale-110 group-hover:opacity-45 transition-all duration-500"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                      />
 
-                        <div className="relative z-10 flex flex-col justify-between h-32">
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="px-2 py-0.5 rounded-full text-[8px] font-extrabold tracking-wider bg-black/55 text-white backdrop-blur-md whitespace-nowrap">
-                              {col.badge}
-                            </span>
-                            <div className="w-6 h-6 rounded-full bg-white/15 backdrop-blur-md flex items-center justify-center text-white shrink-0">
-                              <IconComp size={12} />
+                      <div className="relative z-10 flex flex-col sm:flex-row items-center gap-5">
+                        {/* Sol: Kozmik Neon Halkalı Kapak Görseli */}
+                        <div
+                          onClick={() => {
+                            setActiveCollection(activeSlide);
+                            performSearch(
+                              activeSlide.query,
+                              activeSlide.title,
+                              activeSlide.subtitle
+                            );
+                          }}
+                          className="relative w-36 h-36 sm:w-40 sm:h-40 rounded-xl overflow-hidden bg-[#090d1a] border border-white/15 shrink-0 cursor-pointer group shadow-[0_0_35px_rgba(56,189,248,0.25)]"
+                        >
+                          <img
+                            src={
+                              currentTrack
+                                ? getTrackCover(currentTrack) || activeSlide.cover
+                                : activeSlide.cover
+                            }
+                            alt={activeSlide.title}
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover opacity-75 group-hover:scale-105 transition-transform duration-500"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-tr from-[#090d1a]/70 via-transparent to-cyan-500/20" />
+                          {/* Kozmik Gezegen & Neon Halka Efekti */}
+                          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                            <div className="w-20 h-20 rounded-full bg-black/50 backdrop-blur-[2px] border border-cyan-300/60 shadow-[0_0_25px_rgba(56,189,248,0.7),inset_0_0_18px_rgba(217,70,239,0.6)]" />
+                            <div className="absolute w-32 h-9 rounded-full border border-fuchsia-400/60 -rotate-12 shadow-[0_0_15px_rgba(232,121,249,0.6)]" />
+                          </div>
+                        </div>
+
+                        {/* Sağ: SMART PLAYLIST Başlığı, Dinamik Sanatçı Açıklaması ve Oynat Butonu */}
+                        <div className="flex-1 min-w-0 w-full flex flex-col justify-between">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-300">
+                                {activeSlide.badge || "SMART PLAYLIST"}
+                              </span>
+                              <h3 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-[0.08em] text-white mt-1 drop-shadow">
+                                {activeSlide.title}
+                              </h3>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={(e) =>
+                                openSimilarRecommendations(
+                                  currentTrack || displayedTracks[0],
+                                  e
+                                )
+                              }
+                              className="p-2 rounded-lg text-slate-300 hover:text-cyan-300 hover:bg-white/10 transition-colors"
+                              title="AI Radyo Başlat"
+                            >
+                              <Bookmark size={16} />
+                            </button>
+                          </div>
+
+                          <p className="text-xs sm:text-sm text-slate-300/90 mt-2 leading-relaxed max-w-md">
+                            Son dinlediğin{" "}
+                            <button
+                              type="button"
+                              onClick={(e) => openArtistPage(recentArtistPair[0], e)}
+                              className="font-extrabold text-white hover:text-cyan-300 uppercase tracking-wide"
+                            >
+                              {recentArtistPair[0]}
+                            </button>{" "}
+                            ve{" "}
+                            <button
+                              type="button"
+                              onClick={(e) => openArtistPage(recentArtistPair[1], e)}
+                              className="font-extrabold text-white hover:text-cyan-300 uppercase tracking-wide"
+                            >
+                              {recentArtistPair[1]}
+                            </button>{" "}
+                            frekanslarına göre AI tarafından hazırlandı.
+                          </p>
+
+                          <div className="flex items-center gap-3 mt-4">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (displayedTracks.length > 0) {
+                                  playTrackAtIndex(displayedTracks, 0);
+                                } else {
+                                  performSearch(
+                                    activeSlide.query,
+                                    activeSlide.title,
+                                    activeSlide.subtitle
+                                  );
+                                }
+                              }}
+                              className="w-10 h-10 rounded-full bg-gradient-to-br from-white via-indigo-100 to-indigo-300 hover:scale-105 active:scale-95 text-slate-950 flex items-center justify-center shadow-[0_0_24px_rgba(165,180,252,0.75)] transition-all"
+                              title="Akıllı Listeyi Oynat"
+                            >
+                              <Play size={17} className="fill-current ml-0.5" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={(e) =>
+                                openSimilarRecommendations(
+                                  currentTrack || displayedTracks[0],
+                                  e
+                                )
+                              }
+                              className="px-3.5 py-1.5 rounded-full text-[11px] font-bold bg-white/10 hover:bg-white/20 text-white border border-white/15 backdrop-blur-md flex items-center gap-1.5 transition-all"
+                            >
+                              <Sparkles size={13} className="text-cyan-300" />
+                              <span>AI Benzerlerini Üret</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Kart Altı Carousel Noktaları (`━ • • •`) */}
+                    <div className="flex items-center justify-center gap-2 mt-3">
+                      {COLLECTIONS.map((col, i) => {
+                        const isActiveDot = i === discoveryIdx % COLLECTIONS.length;
+                        return (
+                          <button
+                            key={col.id}
+                            type="button"
+                            onClick={() => {
+                              setDiscoveryIdx(i);
+                              setActiveCollection(col);
+                              performSearch(col.query, col.title, col.subtitle);
+                            }}
+                            className={`h-1.5 rounded-full transition-all ${
+                              isActiveDot
+                                ? "w-6 bg-slate-200 shadow-[0_0_8px_rgba(255,255,255,0.8)]"
+                                : "w-1.5 bg-slate-600 hover:bg-slate-400"
+                            }`}
+                            title={col.subtitle}
+                          />
+                        );
+                      })}
+                    </div>
+                  </section>
+
+                  {/* 2. EXPLORE NEW GENRES (Görseldeki Parlayan Neon Çerçeveli Tür Hapları) */}
+                  <section>
+                    <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-slate-200 mb-3">
+                      EXPLORE NEW GENRES
+                    </h3>
+                    <div className="flex items-center gap-2.5 overflow-x-auto pb-1 no-scrollbar">
+                      {GENRE_PILLS.map((genre) => (
+                        <button
+                          key={genre.id}
+                          type="button"
+                          onClick={() =>
+                            performSearch(
+                              genre.query,
+                              genre.label,
+                              `${genre.label} seçkisi`
+                            )
+                          }
+                          className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all whitespace-nowrap ${genre.style}`}
+                        >
+                          {genre.label}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+
+                  {/* 3. FEATURED ARTISTS (Görseldeki 2x2 Yatay Sanatçı Kartları) */}
+                  <section>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-slate-200">
+                        FEATURED ARTISTS
+                      </h3>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setArtistPageIdx((p) => (p === 0 ? 1 : 0))
+                          }
+                          className="w-6 h-6 rounded-lg bg-white/[0.04] hover:bg-white/[0.1] border border-white/[0.07] flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                          title="Önceki Sanatçılar"
+                        >
+                          <ChevronLeft size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setArtistPageIdx((p) => (p === 0 ? 1 : 0))
+                          }
+                          className="w-6 h-6 rounded-lg bg-white/[0.04] hover:bg-white/[0.1] border border-white/[0.07] flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                          title="Sonraki Sanatçılar"
+                        >
+                          <ChevronRight size={13} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {visibleFeaturedArtists.map((art) => (
+                        <div
+                          key={art.name}
+                          onClick={(e) => openArtistPage(art.name, e)}
+                          className="group flex items-center justify-between p-3 rounded-2xl bg-[#141e33]/85 hover:bg-[#1a2742] border border-white/[0.07] hover:border-cyan-400/35 cursor-pointer transition-all shadow-lg"
+                        >
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <img
+                              src={art.avatar}
+                              alt={art.name}
+                              referrerPolicy="no-referrer"
+                              className="w-12 h-12 rounded-xl object-cover border border-white/10 shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold uppercase tracking-wider text-white truncate">
+                                {art.name}
+                              </p>
+                              <p className="text-[11px] font-medium uppercase tracking-widest text-slate-400 truncate mt-0.5">
+                                {art.sub}
+                              </p>
                             </div>
                           </div>
 
-                          <div>
-                            <h3 className="font-extrabold text-xs text-white leading-snug line-clamp-2">
-                              {col.title}
-                            </h3>
-                            <p className="text-[10px] text-white/75 line-clamp-1 mt-0.5">
-                              {col.subtitle}
-                            </p>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => openArtistPage(art.name, e)}
+                            className="w-8 h-8 rounded-full bg-white/15 group-hover:bg-cyan-400 text-slate-200 group-hover:text-slate-950 flex items-center justify-center transition-all shrink-0 shadow"
+                          >
+                            <Play size={14} className="fill-current ml-0.5" />
+                          </button>
                         </div>
-
-                        <div className="absolute right-2.5 bottom-2.5 z-20 w-8 h-8 rounded-full bg-[#F06B3C] text-white flex items-center justify-center shadow-lg opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all">
-                          <Play size={14} className="fill-current ml-0.5" />
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            </>
-          )}
-
-          {/* ÇALMA LİSTELERİM GÖRÜNÜMÜ */}
-          {activeView === "playlists" && (
-            <section className="space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#F06B3C]">
-                    KÜTÜPHANE
-                  </span>
-                  <h1 className="text-2xl font-extrabold text-white">
-                    Çalma Listelerim
-                  </h1>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setIsSpotifyModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#1DB954] hover:bg-[#1ED760] text-black text-xs font-extrabold shadow-lg shadow-emerald-500/20 transition-all"
-                  >
-                    <Disc3 size={15} />
-                    <span>Spotify&apos;dan Aktar</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setTrackForPlaylistModal(null);
-                      setNewPlaylistName("");
-                      setIsCreateModalOpen(true);
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#F06B3C] hover:bg-[#FF8256] text-white text-xs font-bold shadow-lg shadow-orange-500/25 transition-all"
-                  >
-                    <Plus size={15} />
-                    <span>Yeni Liste Oluştur</span>
-                  </button>
-                </div>
-              </div>
-
-              {customPlaylists.length === 0 ? (
-                <div className="py-16 text-center rounded-2xl bg-white/[0.02] border border-dashed border-white/10">
-                  <ListMusic size={40} className="mx-auto text-[#F06B3C] mb-3" />
-                  <h3 className="text-base font-bold text-white">
-                    Henüz hiç çalma listen yok
-                  </h3>
-                  <p className="text-xs text-zinc-400 mt-1 mb-4">
-                    Yeni bir liste oluşturup beğendiğin şarkıları içine atabilirsin.
-                  </p>
-                  <button
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="px-5 py-2.5 rounded-full bg-[#F06B3C] text-white text-xs font-bold"
-                  >
-                    + İlk Listeni Oluştur
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {customPlaylists.map((pl) => (
-                    <div
-                      key={pl.id}
-                      onClick={() => {
-                        setSelectedPlaylistId(pl.id);
-                        setActiveView("playlist-detail");
-                      }}
-                      className="group p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.07] cursor-pointer transition-all"
-                    >
-                      <div className="relative aspect-square mb-3">
-                        <TrackArtwork
-                          track={
-                            pl.cover
-                              ? { thumbnail: pl.cover, title: pl.name }
-                              : pl.tracks[0]
-                          }
-                          className="w-full h-full rounded-xl"
-                          iconSize={36}
-                        />
-                        {pl.source === "spotify" && (
-                          <span className="absolute left-2.5 top-2.5 px-2 py-0.5 rounded-full text-[9px] font-extrabold tracking-wider bg-[#1DB954] text-black shadow">
-                            SPOTIFY
-                          </span>
-                        )}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (pl.tracks.length > 0) playTrackAtIndex(pl.tracks, 0);
-                          }}
-                          className="absolute right-2.5 bottom-2.5 w-10 h-10 rounded-full bg-[#F06B3C] text-white flex items-center justify-center shadow-xl opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all"
-                        >
-                          <Play size={18} className="fill-current ml-0.5" />
-                        </button>
-                      </div>
-                      <h3 className="font-bold text-sm text-white truncate">
-                        {pl.name}
-                      </h3>
-                      <p className="text-xs text-zinc-400 mt-0.5">
-                        {pl.tracks.length} parça
-                      </p>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </section>
+                </>
               )}
-            </section>
-          )}
 
-          {/* TAM EKRAN SENKRONİZE ŞARKI SÖZLERİ GÖRÜNÜMÜ */}
-          {activeView === "lyrics" && (
-            <section className="relative rounded-3xl overflow-hidden border border-white/[0.06] bg-zinc-950/90 p-6 md:p-10 h-full min-h-[480px] flex flex-col">
-              {currentTrack && (
-                <div
-                  className="pointer-events-none absolute inset-0 opacity-20 blur-3xl scale-125"
-                  style={{
-                    backgroundImage: `url(${getTrackCover(currentTrack)})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                  }}
-                />
+              {/* ÇALMA LİSTELERİM GÖRÜNÜMÜ */}
+              {activeView === "playlists" && (
+                <section className="space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-cyan-400">
+                        LIBRARY
+                      </span>
+                      <h1 className="text-2xl font-extrabold text-white">
+                        Çalma Listelerim
+                      </h1>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setIsSpotifyModalOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#1DB954] hover:bg-[#1ED760] text-black text-xs font-extrabold shadow-lg shadow-emerald-500/20 transition-all"
+                      >
+                        <Disc3 size={15} />
+                        <span>Spotify&apos;dan Aktar</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setTrackForPlaylistModal(null);
+                          setNewPlaylistName("");
+                          setIsCreateModalOpen(true);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-cyan-400 to-indigo-500 text-slate-950 text-xs font-extrabold shadow-lg shadow-cyan-500/25 transition-all"
+                      >
+                        <Plus size={15} />
+                        <span>Yeni Liste Oluştur</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {customPlaylists.length === 0 ? (
+                    <div className="py-16 text-center rounded-2xl bg-white/[0.02] border border-dashed border-white/10">
+                      <ListMusic size={40} className="mx-auto text-cyan-400 mb-3" />
+                      <h3 className="text-base font-bold text-white">
+                        Henüz hiç çalma listen yok
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-1 mb-4">
+                        Yeni bir liste oluşturup beğendiğin şarkıları içine atabilirsin.
+                      </p>
+                      <button
+                        onClick={() => setIsCreateModalOpen(true)}
+                        className="px-5 py-2.5 rounded-full bg-cyan-400 text-slate-950 text-xs font-extrabold"
+                      >
+                        + İlk Listeni Oluştur
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                      {customPlaylists.map((pl) => (
+                        <div
+                          key={pl.id}
+                          onClick={() => {
+                            setSelectedPlaylistId(pl.id);
+                            setActiveView("playlist-detail");
+                          }}
+                          className="group p-4 rounded-2xl bg-[#141e33]/75 hover:bg-[#1a2742] border border-white/[0.07] hover:border-cyan-400/30 cursor-pointer transition-all"
+                        >
+                          <div className="relative aspect-square mb-3">
+                            <TrackArtwork
+                              track={
+                                pl.cover
+                                  ? { thumbnail: pl.cover, title: pl.name }
+                                  : pl.tracks[0]
+                              }
+                              className="w-full h-full rounded-xl"
+                              iconSize={36}
+                            />
+                            {pl.source === "spotify" && (
+                              <span className="absolute left-2.5 top-2.5 px-2 py-0.5 rounded-full text-[9px] font-extrabold tracking-wider bg-[#1DB954] text-black shadow">
+                                SPOTIFY
+                              </span>
+                            )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (pl.tracks.length > 0) playTrackAtIndex(pl.tracks, 0);
+                              }}
+                              className="absolute right-2.5 bottom-2.5 w-10 h-10 rounded-full bg-cyan-400 text-slate-950 flex items-center justify-center shadow-xl opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all"
+                            >
+                              <Play size={18} className="fill-current ml-0.5" />
+                            </button>
+                          </div>
+                          <h3 className="font-bold text-sm text-white truncate">
+                            {pl.name}
+                          </h3>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            {pl.tracks.length} parça
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
               )}
-              <div
-                ref={mainLyricsContainerRef}
-                className="relative z-10 flex-1 overflow-y-auto py-16 px-4 md:px-10 space-y-6"
-              >
-                {!currentTrack ? (
-                  <div className="py-24 text-center text-zinc-500">
-                    <MicVocal size={36} className="mx-auto text-zinc-600 mb-3" />
-                    <p className="text-sm font-medium">Şarkı seçilmedi</p>
-                  </div>
-                ) : lyricsData.loading ? (
-                  <div className="py-24 text-center text-zinc-400 flex flex-col items-center gap-3">
-                    <Loader2 size={28} className="animate-spin text-[#F06B3C]" />
-                  </div>
-                ) : lyricsData.synced.length > 0 ? (
-                  lyricsData.synced.map((line, i) => {
-                    const isActive = i === activeLyricIndex;
-                    const isPassed = i < activeLyricIndex;
-                    return (
-                      <p
+
+              {/* TAM EKRAN SENKRONİZE ŞARKI SÖZLERİ GÖRÜNÜMÜ */}
+              {activeView === "lyrics" && (
+                <section className="relative rounded-3xl overflow-hidden border border-cyan-400/20 bg-[#0b1222]/90 p-6 md:p-10 h-full min-h-[480px] flex flex-col">
+                  {currentTrack && (
+                    <div
+                      className="pointer-events-none absolute inset-0 opacity-20 blur-3xl scale-125"
+                      style={{
+                        backgroundImage: `url(${getTrackCover(currentTrack)})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }}
+                    />
+                  )}
+                  <div
+                    ref={mainLyricsContainerRef}
+                    className="relative z-10 flex-1 overflow-y-auto py-16 px-4 md:px-10 space-y-6"
+                  >
+                    {!currentTrack ? (
+                      <div className="py-24 text-center text-slate-500">
+                        <MicVocal size={36} className="mx-auto text-slate-600 mb-3" />
+                        <p className="text-sm font-medium">Şarkı seçilmedi</p>
+                      </div>
+                    ) : lyricsData.loading ? (
+                      <div className="py-24 text-center text-slate-400 flex flex-col items-center gap-3">
+                        <Loader2 size={28} className="animate-spin text-cyan-400" />
+                      </div>
+                    ) : lyricsData.synced.length > 0 ? (
+                      lyricsData.synced.map((line, i) => {
+                        const isActive = i === activeLyricIndex;
+                        const isPassed = i < activeLyricIndex;
+                        return (
+                          <p
                         key={`${line.time}_${i}`}
                         data-lyric-idx={i}
                         onClick={() => seekToSeconds(line.time)}
                         className={`cursor-pointer leading-snug tracking-tight transition-colors duration-300 ${
                           isActive
-                            ? "text-white text-2xl md:text-3xl font-extrabold"
+                            ? "text-cyan-200 text-2xl md:text-3xl font-extrabold drop-shadow-[0_0_12px_rgba(34,211,238,0.45)]"
                             : isPassed
-                            ? "text-zinc-600 hover:text-zinc-300 text-xl md:text-2xl font-bold"
-                            : "text-zinc-500/80 hover:text-zinc-200 text-xl md:text-2xl font-bold"
+                            ? "text-slate-600 hover:text-slate-300 text-xl md:text-2xl font-bold"
+                            : "text-slate-500/80 hover:text-slate-200 text-xl md:text-2xl font-bold"
                         }`}
                       >
                         {line.text}
@@ -2378,11 +2743,11 @@ export default function HeliosApp() {
                     );
                   })
                 ) : lyricsData.plain ? (
-                  <div className="whitespace-pre-line text-lg md:text-xl leading-relaxed font-bold text-zinc-200 max-w-2xl">
+                  <div className="whitespace-pre-line text-lg md:text-xl leading-relaxed font-bold text-slate-200 max-w-2xl">
                     {lyricsData.plain}
                   </div>
                 ) : (
-                  <div className="py-24 text-center text-zinc-500">
+                  <div className="py-24 text-center text-slate-500">
                     <p className="text-sm font-semibold">
                       {lyricsData.error || "Söz bulunamadı"}
                     </p>
@@ -2392,661 +2757,768 @@ export default function HeliosApp() {
             </section>
           )}
 
-          {/* ŞARKI LİSTESİ TABLOSU (Home, Liked, Recent, Playlist Detail) */}
-          {activeView !== "playlists" && activeView !== "lyrics" && (
-            <section className="space-y-3">
-              {/* Liste Üst Başlığı ve Aksiyonlar */}
-              <div className="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-white/[0.07]">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#F06B3C]">
-                    {activeView === "artist"
-                      ? "SANATÇI DİSKOGRAFİSİ"
-                      : activeView === "recommendations"
-                      ? "BENZER TÜR & FREKANS EŞLEŞMESİ"
-                      : activeView === "liked"
-                      ? "FAVORİLERİM"
-                      : activeView === "recent"
-                      ? "GEÇMİŞ"
-                      : activeView === "playlist-detail"
-                      ? "ÖZEL LİSTE"
-                      : "ŞARKI LİSTESİ"}
-                  </span>
-                  <h2 className="text-xl font-extrabold text-white">
-                    {activeView === "artist"
-                      ? `${selectedArtistName} — Popüler Şarkılar`
-                      : activeView === "recommendations"
-                      ? `${recommendationMeta?.detected_genre || "Aynı Türde"} Önerilen Şarkılar`
-                      : activeView === "liked"
-                      ? "Beğenilen Şarkılar"
-                      : activeView === "recent"
-                      ? "Son Çalınan Şarkılar"
-                      : activeView === "playlist-detail"
-                      ? activePlaylistObj?.name || "Çalma Listesi"
-                      : sectionTitle}
-                  </h2>
-                  <p className="text-xs text-zinc-400">
-                    {activeView === "artist"
-                      ? `${artistTracks.length} şarkı listeleniyor`
-                      : activeView === "recommendations"
-                      ? `${recommendedTracks.length} benzer türde şarkı sıralandı`
-                      : activeView === "liked"
-                      ? `${likedTracks.length} beğenilen şarkı`
-                      : activeView === "recent"
-                      ? `${recentTracks.length} dinlenen şarkı`
-                      : activeView === "playlist-detail"
-                      ? `${activePlaylistObj?.tracks.length || 0} şarkı`
-                      : sectionSub}
-                  </p>
-                </div>
+              {/* ŞARKI LİSTESİ TABLOSU (Home, Liked, Recent, Playlist Detail) */}
+              {activeView !== "playlists" && activeView !== "lyrics" && (
+                <section className="space-y-3 pt-1">
+                  {/* Liste Üst Başlığı ve Aksiyonlar */}
+                  <div className="flex flex-wrap items-center justify-between gap-4 pb-2.5 border-b border-white/[0.07]">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-400">
+                        {activeView === "artist"
+                          ? "ARTIST DISCOGRAPHY"
+                          : activeView === "recommendations"
+                          ? "AI FREQUENCY MATCH"
+                          : activeView === "liked"
+                          ? "FAVORITES"
+                          : activeView === "recent"
+                          ? "RECENTLY PLAYED"
+                          : activeView === "playlist-detail"
+                          ? "CUSTOM PLAYLIST"
+                          : "TRACKS"}
+                      </span>
+                      <h2 className="text-lg font-extrabold tracking-wide text-white mt-0.5">
+                        {activeView === "artist"
+                          ? `${selectedArtistName} — Popüler Şarkılar`
+                          : activeView === "recommendations"
+                          ? `${recommendationMeta?.detected_genre || "Aynı Türde"} Önerilen Şarkılar`
+                          : activeView === "liked"
+                          ? "Beğenilen Şarkılar"
+                          : activeView === "recent"
+                          ? "Son Çalınan Şarkılar"
+                          : activeView === "playlist-detail"
+                          ? activePlaylistObj?.name || "Çalma Listesi"
+                          : sectionTitle}
+                      </h2>
+                      <p className="text-xs text-slate-400">
+                        {activeView === "artist"
+                          ? `${artistTracks.length} şarkı listeleniyor`
+                          : activeView === "recommendations"
+                          ? `${recommendedTracks.length} benzer türde şarkı sıralandı`
+                          : activeView === "liked"
+                          ? `${likedTracks.length} beğenilen şarkı`
+                          : activeView === "recent"
+                          ? `${recentTracks.length} dinlenen şarkı`
+                          : activeView === "playlist-detail"
+                          ? `${activePlaylistObj?.tracks.length || 0} şarkı`
+                          : sectionSub}
+                      </p>
+                    </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    disabled={displayedTracks.length === 0}
-                    onClick={() =>
-                      displayedTracks.length > 0 && playTrackAtIndex(displayedTracks, 0)
-                    }
-                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#F06B3C] hover:bg-[#FF8256] disabled:opacity-40 text-white text-xs font-bold shadow-lg shadow-orange-500/20 transition-all"
-                  >
-                    <Play size={15} className="fill-current" />
-                    <span>Tümünü Çal</span>
-                  </button>
-
-                  <button
-                    disabled={displayedTracks.length === 0}
-                    onClick={() => {
-                      if (!displayedTracks.length) return;
-                      setShuffle(true);
-                      const rand = Math.floor(Math.random() * displayedTracks.length);
-                      playTrackAtIndex(displayedTracks, rand);
-                    }}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/[0.06] hover:bg-white/[0.12] disabled:opacity-40 text-zinc-200 text-xs font-semibold border border-white/[0.08] transition-all"
-                  >
-                    <Shuffle size={14} />
-                    <span>Karıştır</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Yüklenirken Skeleton Gösterimi */}
-              {(activeView === "home" && isLoadingTracks) ||
-              (activeView === "artist" && isLoadingArtist) ||
-              (activeView === "recommendations" && isLoadingRecs) ? (
-                <TrackSkeletonList count={8} />
-              ) : displayedTracks.length === 0 ? (
-                <div className="py-16 text-center rounded-2xl bg-white/[0.02] border border-white/[0.05]">
-                  <Music2 size={36} className="mx-auto text-zinc-500 mb-2" />
-                  <p className="text-sm font-semibold text-zinc-300">
-                    Burada henüz şarkı yok
-                  </p>
-                  <p className="text-xs text-zinc-500 mt-1">
-                    Arama çubuğunu kullanarak veya koleksiyonlardan şarkı ekleyebilirsin.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  {displayedTracks.map((track, idx) => {
-                    const isCurrent = currentTrack?.id === track.id;
-                    const liked = isTrackLiked(track.id);
-                    return (
-                      <div
-                        key={`${track.id}_${idx}`}
-                        onClick={() => {
-                          if (activeView === "home" || activeView === "recent") {
-                            isRadioModeRef.current = false;
-                            playTrackAtIndex([track], 0);
-                          } else {
-                            isRadioModeRef.current = activeView === "recommendations";
-                            playTrackAtIndex(displayedTracks, idx);
-                          }
-                        }}
-                        className={`group flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl cursor-pointer transition-all border ${
-                          isCurrent
-                            ? "bg-[#F06B3C]/15 border-[#F06B3C]/40"
-                            : "bg-transparent border-transparent hover:bg-white/[0.05] hover:border-white/[0.06]"
-                        }`}
+                    <div className="flex items-center gap-2">
+                      <button
+                        disabled={displayedTracks.length === 0}
+                        onClick={() =>
+                          displayedTracks.length > 0 &&
+                          playTrackAtIndex(displayedTracks, 0)
+                        }
+                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-cyan-400 to-indigo-400 hover:from-cyan-300 hover:to-indigo-300 disabled:opacity-40 text-slate-950 text-xs font-extrabold shadow-[0_0_20px_rgba(56,189,248,0.3)] transition-all"
                       >
-                        {/* Sıra No / Ekolayzır / Yükleniyor */}
-                        <div className="w-6 flex items-center justify-center shrink-0">
-                          {isCurrent && isTrackLoading ? (
-                            <Loader2 size={16} className="text-[#F06B3C] animate-spin" />
-                          ) : isCurrent && isPlaying ? (
-                            <div className="flex items-end gap-0.5 h-3.5">
-                              <span className="w-0.5 h-full bg-[#F06B3C] eq-bar eq-bar-1" />
-                              <span className="w-0.5 h-full bg-[#F06B3C] eq-bar eq-bar-2" />
-                              <span className="w-0.5 h-full bg-[#F06B3C] eq-bar eq-bar-3" />
-                              <span className="w-0.5 h-full bg-[#F06B3C] eq-bar eq-bar-4" />
-                            </div>
-                          ) : (
-                            <>
-                              <span
-                                className={`text-xs font-semibold tabular-nums group-hover:hidden ${
-                                  isCurrent ? "text-[#F06B3C]" : "text-zinc-500"
-                                }`}
-                              >
-                                {idx + 1}
-                              </span>
-                              <Play
-                                size={14}
-                                className="hidden group-hover:block text-white fill-current"
-                              />
-                            </>
-                          )}
-                        </div>
+                        <Play size={14} className="fill-current" />
+                        <span>Tümünü Çal</span>
+                      </button>
 
-                        {/* Gerçek Albüm Kapağı + Skeleton */}
-                        <TrackArtwork
-                          track={track}
-                          className="w-11 h-11 rounded-xl"
-                        />
+                      <button
+                        disabled={displayedTracks.length === 0}
+                        onClick={() => {
+                          if (!displayedTracks.length) return;
+                          setShuffle(true);
+                          const rand = Math.floor(
+                            Math.random() * displayedTracks.length
+                          );
+                          playTrackAtIndex(displayedTracks, rand);
+                        }}
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#141e33] hover:bg-[#1b2844] disabled:opacity-40 text-slate-200 text-xs font-semibold border border-white/[0.08] transition-all"
+                      >
+                        <Shuffle size={13} />
+                        <span>Karıştır</span>
+                      </button>
+                    </div>
+                  </div>
 
-                        {/* Başlık & Tıklanabilir Sanatçı İsimleri */}
-                        <div className="flex-1 min-w-0">
-                          <p
-                            className={`text-sm font-bold truncate ${
-                              isCurrent ? "text-[#F06B3C]" : "text-zinc-100"
+                  {/* Yüklenirken Skeleton Gösterimi */}
+                  {(activeView === "home" && isLoadingTracks) ||
+                  (activeView === "artist" && isLoadingArtist) ||
+                  (activeView === "recommendations" && isLoadingRecs) ? (
+                    <TrackSkeletonList count={8} />
+                  ) : displayedTracks.length === 0 ? (
+                    <div className="py-16 text-center rounded-2xl bg-[#11192c]/60 border border-white/[0.06]">
+                      <Music2 size={36} className="mx-auto text-slate-500 mb-2" />
+                      <p className="text-sm font-semibold text-slate-300">
+                        Burada henüz şarkı yok
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Arama çubuğunu kullanarak veya tür haplarından şarkı keşfedebilirsin.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      {displayedTracks.map((track, idx) => {
+                        const isCurrent = currentTrack?.id === track.id;
+                        const liked = isTrackLiked(track.id);
+                        return (
+                          <div
+                            key={`${track.id}_${idx}`}
+                            onClick={() => {
+                              if (activeView === "home" || activeView === "recent") {
+                                isRadioModeRef.current = false;
+                                playTrackAtIndex([track], 0);
+                              } else {
+                                isRadioModeRef.current =
+                                  activeView === "recommendations";
+                                playTrackAtIndex(displayedTracks, idx);
+                              }
+                            }}
+                            className={`group flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl cursor-pointer transition-all border ${
+                              isCurrent
+                                ? "bg-cyan-500/15 border-cyan-400/40 shadow-[0_0_20px_rgba(34,211,238,0.1)]"
+                                : "bg-transparent border-transparent hover:bg-[#141e33]/75 hover:border-white/[0.07]"
                             }`}
                           >
-                            {track.title}
+                            {/* Sıra No / Ekolayzır / Yükleniyor */}
+                            <div className="w-6 flex items-center justify-center shrink-0">
+                              {isCurrent && isTrackLoading ? (
+                                <Loader2
+                                  size={16}
+                                  className="text-cyan-400 animate-spin"
+                                />
+                              ) : isCurrent && isPlaying ? (
+                                <div className="flex items-end gap-0.5 h-3.5">
+                                  <span className="w-0.5 h-full bg-cyan-400 eq-bar eq-bar-1" />
+                                  <span className="w-0.5 h-full bg-cyan-400 eq-bar eq-bar-2" />
+                                  <span className="w-0.5 h-full bg-cyan-400 eq-bar eq-bar-3" />
+                                  <span className="w-0.5 h-full bg-cyan-400 eq-bar eq-bar-4" />
+                                </div>
+                              ) : (
+                                <>
+                                  <span
+                                    className={`text-xs font-semibold tabular-nums group-hover:hidden ${
+                                      isCurrent ? "text-cyan-300" : "text-slate-500"
+                                    }`}
+                                  >
+                                    {idx + 1}
+                                  </span>
+                                  <Play
+                                    size={14}
+                                    className="hidden group-hover:block text-cyan-300 fill-current"
+                                  />
+                                </>
+                              )}
+                            </div>
+
+                            {/* Gerçek Albüm Kapağı */}
+                            <TrackArtwork
+                              track={track}
+                              className="w-11 h-11 rounded-xl"
+                            />
+
+                            {/* Başlık & Tıklanabilir Sanatçı İsimleri */}
+                            <div className="flex-1 min-w-0">
+                              <p
+                                className={`text-sm font-bold truncate ${
+                                  isCurrent ? "text-cyan-300" : "text-slate-100"
+                                }`}
+                              >
+                                {track.title}
+                              </p>
+                              <div className="flex items-center flex-wrap gap-x-1.5 text-xs text-slate-400 truncate mt-0.5">
+                                {splitArtists(track.artist).map(
+                                  (art, aIdx, arr) => (
+                                    <React.Fragment key={`${art}_${aIdx}`}>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => openArtistPage(art, e)}
+                                        className="hover:text-cyan-300 hover:underline transition-colors truncate"
+                                        title={`${art} sayfasına git`}
+                                      >
+                                        {art}
+                                      </button>
+                                      {aIdx < arr.length - 1 && (
+                                        <span className="text-slate-600">•</span>
+                                      )}
+                                    </React.Fragment>
+                                  )
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Albüm */}
+                            <div className="hidden md:block w-40 text-xs text-slate-500 truncate">
+                              {track.album}
+                            </div>
+
+                            {/* Aksiyon Butonları */}
+                            <div
+                              className="flex items-center gap-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                onClick={(e) =>
+                                  openSimilarRecommendations(track, e)
+                                }
+                                className="p-2 rounded-lg text-slate-400 hover:text-cyan-300 hover:bg-cyan-500/15 transition-colors"
+                                title="Bu Şarkıyla Aynı Türde Öner (AI)"
+                              >
+                                <Sparkles size={15} />
+                              </button>
+
+                              <button
+                                onClick={() => setTrackForPlaylistModal(track)}
+                                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                                title="Çalma Listesine Ekle"
+                              >
+                                <ListPlus size={15} />
+                              </button>
+
+                              <button
+                                onClick={(e) => toggleLikeTrack(track, e)}
+                                className={`p-2 rounded-lg transition-colors ${
+                                  liked
+                                    ? "text-cyan-400 hover:bg-cyan-500/15"
+                                    : "text-slate-400 hover:text-white hover:bg-white/10"
+                                }`}
+                                title={liked ? "Beğeniden Çıkar" : "Beğen"}
+                              >
+                                <Heart
+                                  size={15}
+                                  className={liked ? "fill-current" : ""}
+                                />
+                              </button>
+
+                              {activeView === "playlist-detail" &&
+                                activePlaylistObj && (
+                                  <button
+                                    onClick={(e) =>
+                                      handleRemoveTrackFromPlaylist(
+                                        activePlaylistObj.id,
+                                        track.id,
+                                        e
+                                      )
+                                    }
+                                    className="p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                                    title="Bu Listeden Kaldır"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                )}
+                            </div>
+
+                            {/* Süre */}
+                            <div className="w-11 text-right text-xs font-medium text-slate-500 tabular-nums">
+                              {track.duration || "0:00"}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+              )}
+            </main>
+
+            {/* ===== 3. SAĞ SÜTUN: SYNTHESIA `NOW PLAYING` ENTEGRE OYNATICI + YÜZEN `LYRICS / UP NEXT` KARTI ===== */}
+            {isRightSidebarOpen && (
+              <aside className="hidden lg:flex relative w-80 xl:w-[345px] shrink-0 bg-[#0b1222]/75 border-l border-white/[0.07] backdrop-blur-2xl p-5 flex-col justify-between overflow-y-auto overflow-x-hidden">
+                {/* Sağ Üst Başlık: NOW PLAYING */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-medium uppercase tracking-[0.14em] text-white">
+                      NOW PLAYING
+                    </h2>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShuffle((s) => !s);
+                          showToast(
+                            !shuffle
+                              ? "Karıştırma açıldı"
+                              : "Karıştırma kapatıldı"
+                          );
+                        }}
+                        className={`p-1.5 rounded-lg transition-colors ${
+                          shuffle
+                            ? "text-cyan-300 bg-cyan-500/15"
+                            : "text-slate-400 hover:text-white"
+                        }`}
+                        title="Karıştır"
+                      >
+                        <Shuffle size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsUpNextCardOpen((v) => !v)}
+                        className={`p-1.5 rounded-lg transition-colors ${
+                          isUpNextCardOpen
+                            ? "text-cyan-300 bg-cyan-500/15"
+                            : "text-slate-400 hover:text-white"
+                        }`}
+                        title="Lyrics & Up Next Kartını Aç/Kapat"
+                      >
+                        <MoreHorizontal size={16} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Büyük Kare Parlayan Albüm Kapağı + Yüzen LYRICS & UP NEXT Cam Kartı */}
+                  <div className="relative">
+                    {/* Kapak Arkası Cyan/Mor Parlama */}
+                    <div className="pointer-events-none absolute -inset-2 rounded-3xl bg-gradient-to-tr from-cyan-500/25 via-indigo-500/20 to-purple-500/25 blur-xl opacity-80" />
+
+                    <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-[#0a0f1d] border border-cyan-400/35 shadow-[0_0_45px_rgba(56,189,248,0.22)]">
+                      {currentTrack ? (
+                        <>
+                          <TrackArtwork
+                            track={currentTrack}
+                            className="w-full h-full rounded-none border-0"
+                            iconSize={52}
+                          />
+                          {/* Kapak Üzeri Hafif Kozmik Halka & Alt Sanatçı Etiketi (Görseldeki NEBULA / LUMINA estetiği) */}
+                          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#070b15]/85 via-transparent to-black/20" />
+                          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-end p-4 text-center">
+                            <span className="text-[11px] font-semibold uppercase tracking-[0.26em] text-slate-200/90 drop-shadow">
+                              {splitArtists(currentTrack.artist)[0] ||
+                                currentTrack.artist}
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center">
+                          <div className="relative w-28 h-28 rounded-full flex items-center justify-center border border-cyan-400/40 shadow-[0_0_35px_rgba(56,189,248,0.3)] mb-3">
+                            <img
+                              src="/mihon-logo.jpg"
+                              alt="Mihon"
+                              className="w-24 h-24 rounded-full object-cover"
+                            />
+                          </div>
+                          <p className="text-sm font-bold tracking-[0.2em] uppercase text-white">
+                            MIHON
                           </p>
-                          <div className="flex items-center flex-wrap gap-x-1.5 text-xs text-zinc-400 truncate mt-0.5">
-                            {splitArtists(track.artist).map((art, aIdx, arr) => (
+                          <p className="text-[11px] text-slate-400 mt-1">
+                            Bir parçaya tıklayarak başlat
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Görseldeki Sağ-Alt Yüzen `LYRICS` & `UP NEXT` Cam Kartı */}
+                    {isUpNextCardOpen && (
+                      <div className="mt-3 rounded-xl bg-[#131d31]/95 border border-white/[0.1] backdrop-blur-2xl p-3 shadow-[0_12px_32px_rgba(0,0,0,0.65)]">
+                        {/* LYRICS Satırı */}
+                        <div
+                          onClick={() =>
+                            setActiveView(
+                              activeView === "lyrics" ? "home" : "lyrics"
+                            )
+                          }
+                          className="flex items-center justify-between pb-2 mb-2 border-b border-white/[0.07] cursor-pointer group"
+                        >
+                          <div className="min-w-0 flex-1 pr-2">
+                            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-200 group-hover:text-cyan-300 transition-colors">
+                              LYRICS
+                            </span>
+                            {activeLyricIndex >= 0 &&
+                              lyricsData.synced[activeLyricIndex] && (
+                                <p className="text-[11px] text-cyan-300 font-medium truncate mt-0.5">
+                                  “{lyricsData.synced[activeLyricIndex].text}”
+                                </p>
+                              )}
+                          </div>
+                          <MoreHorizontal
+                            size={14}
+                            className="text-slate-400 group-hover:text-cyan-300 shrink-0"
+                          />
+                        </div>
+
+                        {/* UP NEXT Bölümü */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-300">
+                              UP NEXT
+                            </span>
+                            {currentTrack && (
+                              <button
+                                type="button"
+                                onClick={(e) =>
+                                  openSimilarRecommendations(currentTrack, e)
+                                }
+                                className="text-[10px] font-semibold text-cyan-300 hover:underline flex items-center gap-1"
+                              >
+                                <Sparkles size={10} />
+                                <span>AI Öner</span>
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="space-y-1.5 max-h-28 overflow-y-auto pr-0.5">
+                            {queue
+                              .slice(queueIndex + 1, queueIndex + 5)
+                              .map((item, i) => (
+                                <div
+                                  key={`${item.id}_${i}`}
+                                  onClick={() =>
+                                    playTrackAtIndex(queue, queueIndex + 1 + i)
+                                  }
+                                  className="flex items-center gap-2.5 p-1 rounded-lg hover:bg-white/[0.06] cursor-pointer transition-colors"
+                                >
+                                  <TrackArtwork
+                                    track={item}
+                                    className="w-7 h-7 rounded-md"
+                                    iconSize={12}
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-[11px] font-semibold text-slate-100 truncate">
+                                      {item.title}
+                                    </p>
+                                    <p className="text-[9px] uppercase tracking-wider text-slate-400 truncate">
+                                      {item.artist}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            {queue.slice(queueIndex + 1, queueIndex + 5)
+                              .length === 0 && (
+                              <p className="text-[11px] text-slate-500 py-1">
+                                Sıradaki parça otomatik seçilecek
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Alt Kısım: Şarkı Başlığı, Kalp, Parlayan Cyan Seekbar, Oynatma Kontrolleri ve Ses Çubuğu */}
+                <div className="mt-4 space-y-3.5">
+                  {/* Şarkı Başlığı + Sanatçı + Kalp & Liste Butonu */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-lg font-bold uppercase tracking-wider text-white truncate">
+                        {currentTrack ? currentTrack.title : "MIHON READY"}
+                      </h3>
+                      {currentTrack ? (
+                        <div className="flex items-center flex-wrap gap-x-1.5 text-xs font-medium uppercase tracking-widest text-slate-400 mt-0.5">
+                          {splitArtists(currentTrack.artist).map(
+                            (art, aIdx, arr) => (
                               <React.Fragment key={`${art}_${aIdx}`}>
                                 <button
                                   type="button"
                                   onClick={(e) => openArtistPage(art, e)}
-                                  className="hover:text-[#F06B3C] hover:underline transition-colors truncate"
-                                  title={`${art} sayfasına git`}
+                                  className="hover:text-cyan-300 transition-colors truncate"
                                 >
                                   {art}
                                 </button>
-                                {aIdx < arr.length - 1 && (
-                                  <span className="text-zinc-600">•</span>
-                                )}
+                                {aIdx < arr.length - 1 && <span>•</span>}
                               </React.Fragment>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Albüm */}
-                        <div className="hidden md:block w-44 text-xs text-zinc-500 truncate">
-                          {track.album}
-                        </div>
-
-                        {/* Aksiyon Butonları: Aynı Türde Öner, Listeye At, Beğen, Listeden Çıkar */}
-                        <div
-                          className="flex items-center gap-1"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <button
-                            onClick={(e) => openSimilarRecommendations(track, e)}
-                            className="p-2 rounded-lg text-zinc-400 hover:text-[#F06B3C] hover:bg-[#F06B3C]/15 transition-colors"
-                            title="Bu Şarkıyla Aynı Türde Öner"
-                          >
-                            <Sparkles size={16} />
-                          </button>
-
-                          <button
-                            onClick={() => setTrackForPlaylistModal(track)}
-                            className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
-                            title="Çalma Listesine Ekle"
-                          >
-                            <ListPlus size={16} />
-                          </button>
-
-                          <button
-                            onClick={(e) => toggleLikeTrack(track, e)}
-                            className={`p-2 rounded-lg transition-colors ${
-                              liked
-                                ? "text-[#F06B3C] hover:bg-[#F06B3C]/15"
-                                : "text-zinc-400 hover:text-white hover:bg-white/10"
-                            }`}
-                            title={liked ? "Beğeniden Çıkar" : "Beğen"}
-                          >
-                            <Heart size={16} className={liked ? "fill-current" : ""} />
-                          </button>
-
-                          {activeView === "playlist-detail" && activePlaylistObj && (
-                            <button
-                              onClick={(e) =>
-                                handleRemoveTrackFromPlaylist(
-                                  activePlaylistObj.id,
-                                  track.id,
-                                  e
-                                )
-                              }
-                              className="p-2 rounded-lg text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                              title="Bu Listeden Kaldır"
-                            >
-                              <Trash2 size={15} />
-                            </button>
+                            )
                           )}
                         </div>
+                      ) : (
+                        <p className="text-xs uppercase tracking-widest text-slate-500 mt-0.5">
+                          SELECT A TRACK
+                        </p>
+                      )}
+                    </div>
 
-                        {/* Süre */}
-                        <div className="w-12 text-right text-xs font-medium text-zinc-500 tabular-nums">
-                          {track.duration || "0:00"}
-                        </div>
+                    {currentTrack && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => setTrackForPlaylistModal(currentTrack)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                          title="Çalma Listesine Ekle"
+                        >
+                          <ListPlus size={16} />
+                        </button>
+                        <button
+                          onClick={(e) => toggleLikeTrack(currentTrack, e)}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            isTrackLiked(currentTrack.id)
+                              ? "text-cyan-300 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]"
+                              : "text-slate-300 hover:text-white"
+                          }`}
+                          title="Beğen"
+                        >
+                          <Heart
+                            size={17}
+                            className={
+                              isTrackLiked(currentTrack.id) ? "fill-current" : ""
+                            }
+                          />
+                        </button>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
-          )}
-        </main>
+                    )}
+                  </div>
 
-        {/* ===== SAĞ PANEL: ŞİMDİ ÇALIYOR & SIRADAKİ KUYRUK (Açılır / Kapanır) ===== */}
-        {isRightSidebarOpen ? (
-          <aside className="hidden lg:flex w-72 shrink-0 rounded-2xl bg-zinc-900/60 border border-white/[0.07] backdrop-blur-2xl p-4 flex-col justify-between transition-all">
-            <div className="space-y-4 min-h-0 flex-1 flex flex-col">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
-                  Şimdi Çalıyor
-                </span>
-                <div className="flex items-center gap-1.5">
-                  {playbackRate !== 1 && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#F06B3C]/20 text-[#F06B3C]">
-                      {playbackRate}x HIZ
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setIsRightSidebarOpen(false)}
-                    className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
-                    title="Sağ Paneli Gizle"
-                  >
-                    <ChevronRight size={14} />
-                  </button>
-                </div>
-              </div>
+                  {/* Parlayan Cyan İlerleme Çubuğu (Seekbar) */}
+                  <div className="space-y-1">
+                    <input
+                      type="range"
+                      min={0}
+                      max={effectiveDuration || 100}
+                      step={0.1}
+                      value={displayedTime}
+                      disabled={!currentTrack}
+                      onMouseDown={() => setIsSeeking(true)}
+                      onTouchStart={() => setIsSeeking(true)}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        setSeekPreview(val);
+                        if (!isSeeking) seekToSeconds(val);
+                      }}
+                      onMouseUp={(e) => {
+                        const val = parseFloat(e.currentTarget.value);
+                        setIsSeeking(false);
+                        seekToSeconds(val);
+                      }}
+                      onTouchEnd={(e) => {
+                        const val = parseFloat(e.currentTarget.value);
+                        setIsSeeking(false);
+                        seekToSeconds(val);
+                      }}
+                      style={{ "--progress": `${seekPercent}%` }}
+                      className="helios-slider w-full"
+                    />
+                    <div className="flex items-center justify-between text-[10px] font-medium text-slate-400 tabular-nums">
+                      <span>{formatTime(displayedTime)}</span>
+                      <span>{formatTime(effectiveDuration)}</span>
+                    </div>
+                  </div>
 
-            {/* Büyük Kapak Kartı */}
-            <div className="relative aspect-square rounded-2xl overflow-hidden bg-zinc-800/60 border border-white/10 shadow-2xl">
-              {currentTrack ? (
+                  {/* Ana Oynatma Kontrolleri (Shuffle, Prev, Parlayan Cyan/Beyaz Play, Next, Repeat) */}
+                  <div className="flex items-center justify-between px-1">
+                    <button
+                      onClick={() => {
+                        setShuffle((s) => !s);
+                        showToast(
+                          !shuffle
+                            ? "Karıştırma açıldı"
+                            : "Karıştırma kapatıldı"
+                        );
+                      }}
+                      className={`p-2 rounded-lg transition-colors ${
+                        shuffle
+                          ? "text-cyan-300 bg-cyan-500/15"
+                          : "text-slate-400 hover:text-white"
+                      }`}
+                      title="Karıştır"
+                    >
+                      <Shuffle size={16} />
+                    </button>
+
+                    <button
+                      onClick={handlePrev}
+                      className="p-2 rounded-lg text-slate-200 hover:text-cyan-300 transition-colors"
+                      title="Önceki Parça"
+                    >
+                      <SkipBack size={20} className="fill-current" />
+                    </button>
+
+                    <button
+                      onClick={togglePlayPause}
+                      className="w-12 h-12 rounded-2xl bg-gradient-to-br from-white via-cyan-200 to-sky-400 hover:scale-105 active:scale-95 text-slate-950 flex items-center justify-center shadow-[0_0_28px_rgba(56,189,248,0.65)] transition-all"
+                      title="Oynat / Duraklat (Boşluk)"
+                    >
+                      {isTrackLoading ? (
+                        <Loader2 size={22} className="animate-spin text-slate-950" />
+                      ) : isPlaying ? (
+                        <Pause size={22} className="fill-current" />
+                      ) : (
+                        <Play size={22} className="fill-current ml-0.5" />
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => handleNext(true)}
+                      className="p-2 rounded-lg text-slate-200 hover:text-cyan-300 transition-colors"
+                      title="Sonraki Parça"
+                    >
+                      <SkipForward size={20} className="fill-current" />
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        const next =
+                          repeatMode === "off"
+                            ? "all"
+                            : repeatMode === "all"
+                            ? "one"
+                            : "off";
+                        setRepeatMode(next);
+                      }}
+                      className={`p-2 rounded-lg transition-colors ${
+                        repeatMode !== "off"
+                          ? "text-cyan-300 bg-cyan-500/15"
+                          : "text-slate-400 hover:text-white"
+                      }`}
+                      title="Tekrarla"
+                    >
+                      {repeatMode === "one" ? (
+                        <Repeat1 size={16} />
+                      ) : (
+                        <Repeat size={16} />
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Alt Ses Kaydırıcısı ve Yardımcı Kontroller (Görselin Sağ En Alt Satırı) */}
+                  <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between gap-2.5">
+                    <button
+                      onClick={() => setIsMuted((m) => !m)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-white transition-colors"
+                      title="Sesi Kapat / Aç"
+                    >
+                      {isMuted || volume === 0 ? (
+                        <VolumeX size={16} />
+                      ) : volume < 0.5 ? (
+                        <Volume1 size={16} />
+                      ) : (
+                        <Volume2 size={16} />
+                      )}
+                    </button>
+
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      value={isMuted ? 0 : volume}
+                      onChange={(e) => {
+                        const v = parseFloat(e.target.value);
+                        volumeRef.current = v;
+                        mutedRef.current = false;
+                        applyAudioSettings();
+                        setVolume(v);
+                        setIsMuted(false);
+                        localStorage.setItem("volume", JSON.stringify(v));
+                      }}
+                      style={{ "--progress": `${(isMuted ? 0 : volume) * 100}%` }}
+                      className="helios-slider flex-1"
+                    />
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={cyclePlaybackSpeed}
+                        className={`px-2 py-1 rounded-md text-[10px] font-extrabold border transition-all ${
+                          playbackRate !== 1
+                            ? "bg-cyan-500/20 text-cyan-300 border-cyan-400/40"
+                            : "bg-white/[0.04] text-slate-400 border-white/10 hover:text-white"
+                        }`}
+                        title="Oynatma Hızı"
+                      >
+                        {playbackRate}x
+                      </button>
+
+                      <button
+                        onClick={() =>
+                          setActiveView(
+                            activeView === "lyrics" ? "home" : "lyrics"
+                          )
+                        }
+                        className={`p-1.5 rounded-md transition-colors ${
+                          activeView === "lyrics"
+                            ? "text-cyan-300 bg-cyan-500/15"
+                            : "text-slate-400 hover:text-white"
+                        }`}
+                        title="Canlı Şarkı Sözleri"
+                      >
+                        <MicVocal size={14} />
+                      </button>
+
+                      {currentTrack && (
+                        <button
+                          onClick={(e) =>
+                            openSimilarRecommendations(currentTrack, e)
+                          }
+                          className="p-1.5 rounded-md text-slate-400 hover:text-cyan-300 transition-colors"
+                          title="Aynı Türde AI Öner"
+                        >
+                          <Sparkles size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </aside>
+            )}
+          </div>
+
+          {/* Sağ Panel Kapalıyken veya Küçük Ekranda Kompakt Alt Oynatıcı */}
+          {!isRightSidebarOpen && (
+            <footer className="h-20 px-5 bg-[#0b1222]/95 border-t border-white/[0.08] backdrop-blur-2xl flex items-center justify-between gap-5 shrink-0">
+              <div className="flex items-center gap-3 w-64 min-w-0">
                 <TrackArtwork
                   track={currentTrack}
-                  className="w-full h-full rounded-none border-0"
-                  iconSize={48}
+                  className="w-12 h-12 rounded-xl"
+                  iconSize={18}
                 />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-zinc-500 p-4 text-center">
-                  <img
-                    src="/mihon-logo.jpg"
-                    alt="Mihon"
-                    className="w-20 h-20 rounded-2xl object-cover shadow-2xl border border-white/10 mb-3"
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-white truncate">
+                    {currentTrack ? currentTrack.title : "Mihon"}
+                  </p>
+                  <p className="text-[11px] text-slate-400 truncate">
+                    {currentTrack ? currentTrack.artist : "Parça seçilmedi"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex-1 max-w-xl flex flex-col items-center gap-1.5">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handlePrev}
+                    className="p-1.5 text-slate-200 hover:text-cyan-300"
+                  >
+                    <SkipBack size={17} className="fill-current" />
+                  </button>
+                  <button
+                    onClick={togglePlayPause}
+                    className="w-9 h-9 rounded-full bg-cyan-400 text-slate-950 flex items-center justify-center shadow-[0_0_16px_rgba(56,189,248,0.5)]"
+                  >
+                    {isPlaying ? (
+                      <Pause size={16} className="fill-current" />
+                    ) : (
+                      <Play size={16} className="fill-current ml-0.5" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleNext(true)}
+                    className="p-1.5 text-slate-200 hover:text-cyan-300"
+                  >
+                    <SkipForward size={17} className="fill-current" />
+                  </button>
+                </div>
+                <div className="w-full flex items-center gap-2.5">
+                  <span className="text-[10px] text-slate-400 tabular-nums">
+                    {formatTime(displayedTime)}
+                  </span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={effectiveDuration || 100}
+                    step={0.1}
+                    value={displayedTime}
+                    disabled={!currentTrack}
+                    onChange={(e) => seekToSeconds(parseFloat(e.target.value))}
+                    style={{ "--progress": `${seekPercent}%` }}
+                    className="helios-slider flex-1"
                   />
-                  <p className="text-xs font-bold text-zinc-200">
-                    Mihon
-                  </p>
-                  <p className="text-[11px] text-zinc-500 mt-0.5">
-                    Bir şarkıya tıklayarak anında çalmaya başla
-                  </p>
+                  <span className="text-[10px] text-slate-400 tabular-nums">
+                    {formatTime(effectiveDuration)}
+                  </span>
                 </div>
-              )}
-            </div>
+              </div>
 
-            {currentTrack && (
-              <div className="space-y-2.5">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <h3 className="font-extrabold text-base text-white truncate">
-                      {currentTrack.title}
-                    </h3>
-                    <div className="flex items-center flex-wrap gap-x-1.5 text-xs text-zinc-400">
-                      {splitArtists(currentTrack.artist).map((art, aIdx, arr) => (
-                        <React.Fragment key={`${art}_${aIdx}`}>
-                          <button
-                            type="button"
-                            onClick={(e) => openArtistPage(art, e)}
-                            className="hover:text-[#F06B3C] hover:underline transition-colors truncate"
-                          >
-                            {art}
-                          </button>
-                          {aIdx < arr.length - 1 && <span>•</span>}
-                        </React.Fragment>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      onClick={() => setTrackForPlaylistModal(currentTrack)}
-                      className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10"
-                      title="Listeye Ekle"
-                    >
-                      <ListPlus size={16} />
-                    </button>
-                    <button
-                      onClick={(e) => toggleLikeTrack(currentTrack, e)}
-                      className={`p-1.5 rounded-lg ${
-                        isTrackLiked(currentTrack.id)
-                          ? "text-[#F06B3C]"
-                          : "text-zinc-400 hover:text-white"
-                      }`}
-                    >
-                      <Heart
-                        size={16}
-                        className={isTrackLiked(currentTrack.id) ? "fill-current" : ""}
-                      />
-                    </button>
-                  </div>
-                </div>
-
+              <div className="flex items-center justify-end gap-2 w-56">
                 <button
-                  onClick={(e) => openSimilarRecommendations(currentTrack, e)}
-                  className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-gradient-to-r from-[#F06B3C]/20 to-purple-600/20 hover:from-[#F06B3C] hover:to-purple-600 text-orange-300 hover:text-white border border-[#F06B3C]/30 text-xs font-bold transition-all"
+                  onClick={() => setIsRightSidebarOpen(true)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40"
                 >
-                  <Sparkles size={14} />
-                  <span>Aynı Türde Şarkı Öner</span>
+                  Now Playing Aç
                 </button>
               </div>
-            )}
-
-            {/* Sıradaki Parçalar */}
-            <div className="pt-3 border-t border-white/[0.07] flex-1 flex flex-col min-h-0">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2">
-                SIRADAKİ PARÇALAR
-              </span>
-              <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
-                {queue.slice(queueIndex + 1, queueIndex + 12).map((item, i) => (
-                  <div
-                    key={`${item.id}_${i}`}
-                    onClick={() => playTrackAtIndex(queue, queueIndex + 1 + i)}
-                    className="flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-white/[0.06] cursor-pointer transition-colors"
-                  >
-                    <TrackArtwork
-                      track={item}
-                      className="w-8 h-8 rounded-lg"
-                      iconSize={13}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-zinc-200 truncate">
-                        {item.title}
-                      </p>
-                      <p className="text-[10px] text-zinc-500 truncate">
-                        {item.artist}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </aside>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setIsRightSidebarOpen(true)}
-            className="hidden lg:flex w-7 shrink-0 rounded-2xl bg-zinc-900/60 hover:bg-zinc-800/80 border border-white/[0.07] hover:border-[#F06B3C]/40 flex-col items-center justify-center gap-2 text-zinc-400 hover:text-[#F06B3C] transition-all group"
-            title="Sağ Paneli Aç"
-          >
-            <ChevronLeft size={15} className="group-hover:-translate-x-0.5 transition-transform" />
-          </button>
-        )}
-      </div>
-
-      {/* ===== ALT OYNATICI ÇUBUĞU (İleri-Geri Sarma + 2x Hız + Listeye Atma) ===== */}
-      <footer className="relative z-20 h-24 m-2.5 px-5 rounded-2xl bg-zinc-950/90 border border-white/[0.09] backdrop-blur-2xl flex items-center justify-between gap-6 shadow-2xl shrink-0">
-        {/* Sol: Çalan Şarkı Bilgisi */}
-        <div className="flex items-center gap-3.5 w-72 min-w-0">
-          <TrackArtwork
-            track={currentTrack}
-            className="w-14 h-14 rounded-xl shadow-lg"
-            iconSize={22}
-          />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-white truncate">
-              {currentTrack ? currentTrack.title : "Mihon"}
-            </p>
-            {currentTrack ? (
-              <div className="flex items-center gap-x-1.5 text-xs text-zinc-400 truncate mt-0.5">
-                {splitArtists(currentTrack.artist).map((art, aIdx, arr) => (
-                  <React.Fragment key={`${art}_${aIdx}`}>
-                    <button
-                      type="button"
-                      onClick={(e) => openArtistPage(art, e)}
-                      className="hover:text-[#F06B3C] hover:underline transition-colors truncate"
-                      title={`${art} sayfasına git`}
-                    >
-                      {art}
-                    </button>
-                    {aIdx < arr.length - 1 && <span>•</span>}
-                  </React.Fragment>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-zinc-400 truncate mt-0.5">
-                Bir şarkı veya koleksiyon seç
-              </p>
-            )}
-          </div>
-          {currentTrack && (
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                onClick={(e) => toggleLikeTrack(currentTrack, e)}
-                className={`p-2 rounded-lg transition-colors ${
-                  isTrackLiked(currentTrack.id)
-                    ? "text-[#F06B3C]"
-                    : "text-zinc-400 hover:text-white"
-                }`}
-                title="Beğen"
-              >
-                <Heart
-                  size={17}
-                  className={isTrackLiked(currentTrack.id) ? "fill-current" : ""}
-                />
-              </button>
-              <button
-                onClick={() => setTrackForPlaylistModal(currentTrack)}
-                className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
-                title="Çalma Listesine Ekle"
-              >
-                <ListPlus size={17} />
-              </button>
-            </div>
+            </footer>
           )}
         </div>
-
-        {/* Orta: Kontroller + İleri/Geri Sarma Çubuğu (Seekbar) */}
-        <div className="flex-1 max-w-2xl flex flex-col items-center gap-2">
-          <div className="flex items-center gap-3">
-            {/* Karıştır */}
-            <button
-              onClick={() => {
-                setShuffle((s) => !s);
-                showToast(!shuffle ? "Karıştırma açıldı" : "Karıştırma kapatıldı");
-              }}
-              className={`p-2 rounded-full transition-colors ${
-                shuffle
-                  ? "text-[#F06B3C] bg-[#F06B3C]/15"
-                  : "text-zinc-400 hover:text-white"
-              }`}
-              title="Karıştır"
-            >
-              <Shuffle size={16} />
-            </button>
-
-            {/* Önceki */}
-            <button
-              onClick={handlePrev}
-              className="p-2 rounded-full text-zinc-200 hover:text-white hover:bg-white/10 transition-colors"
-              title="Önceki Şarkı"
-            >
-              <SkipBack size={19} className="fill-current" />
-            </button>
-
-            {/* -10sn Geri Sar */}
-            <button
-              onClick={() => seekToSeconds(currentTime - 10)}
-              disabled={!currentTrack}
-              className="px-2 py-1 rounded-lg text-[11px] font-bold text-zinc-400 hover:text-white hover:bg-white/10 disabled:opacity-30 transition-colors"
-              title="10 Saniye Geri Sar"
-            >
-              -10s
-            </button>
-
-            {/* Oynat / Duraklat */}
-            <button
-              onClick={togglePlayPause}
-              className="w-11 h-11 rounded-full bg-[#F06B3C] hover:bg-[#FF8256] text-white flex items-center justify-center shadow-lg shadow-orange-500/30 hover:scale-105 active:scale-95 transition-all"
-              title="Oynat / Duraklat (Boşluk)"
-            >
-              {isTrackLoading ? (
-                <Loader2 size={20} className="animate-spin" />
-              ) : isPlaying ? (
-                <Pause size={20} className="fill-current" />
-              ) : (
-                <Play size={20} className="fill-current ml-0.5" />
-              )}
-            </button>
-
-            {/* +10sn İleri Sar */}
-            <button
-              onClick={() => seekToSeconds(currentTime + 10)}
-              disabled={!currentTrack}
-              className="px-2 py-1 rounded-lg text-[11px] font-bold text-zinc-400 hover:text-white hover:bg-white/10 disabled:opacity-30 transition-colors"
-              title="10 Saniye İleri Sar"
-            >
-              +10s
-            </button>
-
-            {/* Sonraki */}
-            <button
-              onClick={() => handleNext(true)}
-              className="p-2 rounded-full text-zinc-200 hover:text-white hover:bg-white/10 transition-colors"
-              title="Sonraki Şarkı"
-            >
-              <SkipForward size={19} className="fill-current" />
-            </button>
-
-            {/* Tekrar */}
-            <button
-              onClick={() => {
-                const next =
-                  repeatMode === "off" ? "all" : repeatMode === "all" ? "one" : "off";
-                setRepeatMode(next);
-              }}
-              className={`p-2 rounded-full transition-colors ${
-                repeatMode !== "off"
-                  ? "text-[#F06B3C] bg-[#F06B3C]/15"
-                  : "text-zinc-400 hover:text-white"
-              }`}
-              title="Tekrarla"
-            >
-              {repeatMode === "one" ? <Repeat1 size={16} /> : <Repeat size={16} />}
-            </button>
-          </div>
-
-          {/* İlerleme ve İleri-Geri Sarma Çubuğu */}
-          <div className="w-full flex items-center gap-3">
-            <span className="text-[11px] font-medium text-zinc-400 tabular-nums w-9 text-right">
-              {formatTime(displayedTime)}
-            </span>
-
-            <input
-              type="range"
-              min={0}
-              max={effectiveDuration || 100}
-              step={0.1}
-              value={displayedTime}
-              disabled={!currentTrack}
-              onMouseDown={() => setIsSeeking(true)}
-              onTouchStart={() => setIsSeeking(true)}
-              onChange={(e) => {
-                const val = parseFloat(e.target.value);
-                setSeekPreview(val);
-                if (!isSeeking) seekToSeconds(val);
-              }}
-              onMouseUp={(e) => {
-                const val = parseFloat(e.currentTarget.value);
-                setIsSeeking(false);
-                seekToSeconds(val);
-              }}
-              onTouchEnd={(e) => {
-                const val = parseFloat(e.currentTarget.value);
-                setIsSeeking(false);
-                seekToSeconds(val);
-              }}
-              style={{ "--progress": `${seekPercent}%` }}
-              className="helios-slider flex-1"
-            />
-
-            <span className="text-[11px] font-medium text-zinc-400 tabular-nums w-9">
-              {formatTime(effectiveDuration)}
-            </span>
-          </div>
-        </div>
-
-        {/* Sağ: Şarkı Sözleri + Oynatma Hızı (1x / 1.25x / 1.5x / 2x) + Ses Kontrolü */}
-        <div className="flex items-center justify-end gap-2.5 w-80">
-          {/* Şarkı Sözleri Butonu */}
-          <button
-            type="button"
-            onClick={() =>
-              setActiveView(activeView === "lyrics" ? "home" : "lyrics")
-            }
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all ${
-              activeView === "lyrics"
-                ? "bg-[#F06B3C] text-white border-[#F06B3C] shadow-lg shadow-orange-500/20"
-                : "bg-white/[0.05] text-zinc-300 border-white/10 hover:bg-white/10 hover:text-white"
-            }`}
-            title="Canlı Şarkı Sözlerini Aç / Kapat"
-          >
-            <MicVocal size={14} />
-            <span>Sözler</span>
-          </button>
-
-          {/* Oynatma Hızı Butonu */}
-          <button
-            onClick={cyclePlaybackSpeed}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all ${
-              playbackRate !== 1
-                ? "bg-[#F06B3C] text-white border-[#F06B3C] shadow-lg shadow-orange-500/20"
-                : "bg-white/[0.05] text-zinc-300 border-white/10 hover:bg-white/10 hover:text-white"
-            }`}
-            title="Oynatma Hızını Değiştir (0.75x - 2x)"
-          >
-            <Gauge size={14} />
-            <span>{playbackRate}x</span>
-          </button>
-
-          {/* Ses İkonu & Kaydırıcı */}
-          <button
-            onClick={() => setIsMuted((m) => !m)}
-            className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
-            title="Sesi Kapat / Aç"
-          >
-            {isMuted || volume === 0 ? (
-              <VolumeX size={18} />
-            ) : volume < 0.5 ? (
-              <Volume1 size={18} />
-            ) : (
-              <Volume2 size={18} />
-            )}
-          </button>
-
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.01}
-            value={isMuted ? 0 : volume}
-            onChange={(e) => {
-              const v = parseFloat(e.target.value);
-              volumeRef.current = v;
-              mutedRef.current = false;
-              applyAudioSettings();
-              setVolume(v);
-              setIsMuted(false);
-              localStorage.setItem("volume", JSON.stringify(v));
-            }}
-            style={{ "--progress": `${(isMuted ? 0 : volume) * 100}%` }}
-            className="helios-slider w-24"
-          />
-          <span className="text-[11px] font-bold text-zinc-400 tabular-nums w-8 text-right">
-            {Math.round((isMuted ? 0 : volume) * 100)}%
-          </span>
-        </div>
-      </footer>
+      </div>
 
       {/* ===== MODAL 1: YENİ ÇALMA LİSTESİ OLUŞTUR ===== */}
       {isCreateModalOpen && (

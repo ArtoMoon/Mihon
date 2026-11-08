@@ -73,12 +73,13 @@ fn find_cached(dir: &Path, id: &str) -> Option<PathBuf> {
         .map(|ext| dir.join(format!("{id}.{ext}")))
         .find(|p| std::fs::metadata(p).map(|m| m.len() > 10_000).unwrap_or(false))
     {
+        touch_file(&found);
         return Some(found);
     }
 
     // Herhangi bir uzantıyla indirilmiş dosyayı da yakala ({id}.*)
     let prefix = format!("{id}.");
-    std::fs::read_dir(dir)
+    let found = std::fs::read_dir(dir)
         .ok()?
         .filter_map(Result::ok)
         .map(|e| e.path())
@@ -88,7 +89,85 @@ fn find_cached(dir: &Path, id: &str) -> Option<PathBuf> {
                 .map(|name| name.starts_with(&prefix) && !name.ends_with(".part"))
                 .unwrap_or(false)
                 && std::fs::metadata(p).map(|m| m.len() > 10_000).unwrap_or(false)
-        })
+        });
+    if let Some(ref p) = found {
+        touch_file(p);
+    }
+    found
+}
+
+fn touch_file(path: &Path) {
+    if let Ok(file) = std::fs::OpenOptions::new().write(true).open(path) {
+        let _ = file.set_modified(std::time::SystemTime::now());
+    }
+}
+
+/// Akıllı LRU (En Eski Kullanılanları ve Dev Video Dosyalarını Otomatik Temizleyen) Önbellek Yöneticisi
+/// Maksimum 350 MB sınırını korur ve eskiden kalma >3.5 MB video/yüksek boyutlu dosyaları otomatik temizler.
+const MAX_CACHE_BYTES: u64 = 350 * 1024 * 1024; // 350 MB tavan sınır
+const OVERSIZED_FILE_BYTES: u64 = 3_500_000; // 3.5 MB üstü eski video/yüksek bitrate dosyaları
+
+pub fn enforce_cache_limit(dir: &Path, keep_id: Option<&str>) {
+    let Ok(rd) = std::fs::read_dir(dir) else {
+        return;
+    };
+
+    let keep_prefix = keep_id.map(|id| format!("{id}."));
+    let mut entries: Vec<(PathBuf, u64, std::time::SystemTime)> = Vec::new();
+    let mut total_bytes: u64 = 0;
+
+    for entry in rd.filter_map(Result::ok) {
+        let path = entry.path();
+        let Ok(meta) = entry.metadata() else {
+            continue;
+        };
+        if !meta.is_file() {
+            continue;
+        }
+        let name = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or_default();
+        let is_kept = keep_prefix
+            .as_ref()
+            .is_some_and(|kp| name.starts_with(kp));
+
+        let len = meta.len();
+        // Eskiden fallback yüzünden video olarak inmiş (>3.5 MB) veya bozuk .part dosyalarını anında sil
+        if !is_kept && (len > OVERSIZED_FILE_BYTES || name.ends_with(".part")) {
+            let _ = std::fs::remove_file(&path);
+            continue;
+        }
+
+        let modified = meta.modified().unwrap_or(std::time::UNIX_EPOCH);
+        total_bytes += len;
+        entries.push((path, len, modified));
+    }
+
+    if total_bytes <= MAX_CACHE_BYTES {
+        return;
+    }
+
+    // En eski dinlenen şarkılardan başlayarak sırala (LRU)
+    entries.sort_by_key(|(_, _, modified)| *modified);
+
+    for (path, len, _) in entries {
+        if total_bytes <= MAX_CACHE_BYTES {
+            break;
+        }
+        if let Some(ref kp) = keep_prefix {
+            if path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .is_some_and(|n| n.starts_with(kp))
+            {
+                continue;
+            }
+        }
+        if std::fs::remove_file(&path).is_ok() {
+            total_bytes = total_bytes.saturating_sub(len);
+        }
+    }
 }
 
 /// Parçanın yerel dosya yolunu döndürür; önbellekte yoksa en hızlı ses akışını indirir.
@@ -140,12 +219,14 @@ async fn download_audio_inner(cache_dir: &Path, id: &str) -> Result<PathBuf, Str
     let out_tmpl = cache_dir.join(format!("{id}.%(ext)s"));
     let url = format!("https://www.youtube.com/watch?v={id}");
 
-    // 1. Deneme: Yüksek verimli sıkıştırılmış Opus/AAC akışı (250/249/139 öncelikli — ~1 MB/şarkı, 3x hızlı başlangıç)
+    // 1. Deneme: En küçük boyutlu yüksek verimli Opus/AAC ses akışı (249 ~50kbps / 600 ~35kbps / 139 ~48kbps => ~0.8 - 1.1 MB/şarkı)
     let output = command(prog)
         .args(pre)
         .args([
             "-f",
-            "250/249/139/ba[abr<=75]/140/251/ba[ext=webm]/ba[ext=m4a]/ba/b",
+            "600/249/139/599/250/ba[abr<=70]/ba/b",
+            "-S",
+            "+size,+abr",
             "--concurrent-fragments",
             "4",
             "--no-playlist",
@@ -165,14 +246,19 @@ async fn download_audio_inner(cache_dir: &Path, id: &str) -> Result<PathBuf, Str
 
     if output.status.success() {
         if let Some(p) = find_cached(cache_dir, id) {
+            enforce_cache_limit(cache_dir, Some(id));
             return Ok(p);
         }
     }
 
-    // 2. Yedek Deneme: Hiçbir format kısıtlaması olmadan (bazı kısıtlı/yeni yüklenen parçalar için)
+    // 2. Yedek Deneme: Yalnızca ses akışı veya en küçük boyutlu akış (asla 40 MB video indirmesin!)
     let fallback = command(prog)
         .args(pre)
         .args([
+            "-f",
+            "ba/worst",
+            "-S",
+            "+size",
             "--no-playlist",
             "--no-part",
             "--no-mtime",
@@ -197,11 +283,15 @@ async fn download_audio_inner(cache_dir: &Path, id: &str) -> Result<PathBuf, Str
         return Err(format!("İndirme başarısız: {last}"));
     }
 
-    find_cached(cache_dir, id).ok_or_else(|| "İndirilen dosya bulunamadı".into())
+    let found = find_cached(cache_dir, id)
+        .ok_or_else(|| "İndirilen dosya bulunamadı".to_string())?;
+    enforce_cache_limit(cache_dir, Some(id));
+    Ok(found)
 }
 
-/// Önbellek boyutu (bayt) ve dosya sayısı.
+/// Önbellek boyutu (bayt) ve dosya sayısı. Her sorguda otomatik olarak 350 MB sınırını ve dev video dosyalarını temizler.
 pub fn cache_stats(dir: &Path) -> (u64, usize) {
+    enforce_cache_limit(dir, None);
     std::fs::read_dir(dir)
         .map(|rd| {
             rd.filter_map(Result::ok)
