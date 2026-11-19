@@ -1,13 +1,16 @@
-//! Ses önbelleği ve hızlı akış: yt-dlp ile parçayı yerel diske en hızlı şekilde indirir,
-//! aynı parçaya eşzamanlı yapılan istekleri tek bir indirmede birleştirir (in-flight deduplication).
+//! Ses önbelleği ve hızlı akış: yt-dlp ile parçayı geçici (`.tmp`) dizine indirip
+//! yalnızca indirme %100 başarıyla tamamlandığında atomik olarak önbelleğe taşır.
+//! Böylece yarım inmiş / bozuk dosyalar asla önbelleğe girmez.
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, OnceLock};
 use tokio::process::Command;
 
 const AUDIO_EXTS: [&str; 6] = ["webm", "opus", "m4a", "mp3", "ogg", "mp4"];
+static DOWNLOAD_NONCE: AtomicU64 = AtomicU64::new(1);
 
 /// yt-dlp'nin nasıl çalıştırılacağı: (program, ön argümanlar)
 type Launcher = (String, Vec<String>);
@@ -16,6 +19,15 @@ type Launcher = (String, Vec<String>);
 fn inflight_set() -> &'static Mutex<HashSet<String>> {
     static INFLIGHT: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
     INFLIGHT.get_or_init(|| Mutex::new(HashSet::new()))
+}
+
+struct InflightGuard(String);
+impl Drop for InflightGuard {
+    fn drop(&mut self) {
+        if let Ok(mut set) = inflight_set().lock() {
+            set.remove(&self.0);
+        }
+    }
 }
 
 /// Video kimliği yalnızca güvenli karakterler içermelidir (argüman enjeksiyonunu önler).
@@ -71,13 +83,13 @@ fn find_cached(dir: &Path, id: &str) -> Option<PathBuf> {
     if let Some(found) = AUDIO_EXTS
         .iter()
         .map(|ext| dir.join(format!("{id}.{ext}")))
-        .find(|p| std::fs::metadata(p).map(|m| m.len() > 10_000).unwrap_or(false))
+        .find(|p| std::fs::metadata(p).map(|m| m.len() > 16_384).unwrap_or(false))
     {
         touch_file(&found);
         return Some(found);
     }
 
-    // Herhangi bir uzantıyla indirilmiş dosyayı da yakala ({id}.*)
+    // Herhangi bir uzantıyla tamamlanmış dosyayı da yakala ({id}.*), ancak .part/.ytdl/.tmp hariç
     let prefix = format!("{id}.");
     let found = std::fs::read_dir(dir)
         .ok()?
@@ -86,14 +98,37 @@ fn find_cached(dir: &Path, id: &str) -> Option<PathBuf> {
         .find(|p| {
             p.file_name()
                 .and_then(|n| n.to_str())
-                .map(|name| name.starts_with(&prefix) && !name.ends_with(".part"))
+                .map(|name| {
+                    name.starts_with(&prefix)
+                        && !name.ends_with(".part")
+                        && !name.ends_with(".ytdl")
+                        && !name.ends_with(".tmp")
+                })
                 .unwrap_or(false)
-                && std::fs::metadata(p).map(|m| m.len() > 10_000).unwrap_or(false)
+                && std::fs::metadata(p).map(|m| m.len() > 16_384).unwrap_or(false)
         });
     if let Some(ref p) = found {
         touch_file(p);
     }
     found
+}
+
+/// Bozuk veya yarım inmiş eski bir önbellek dosyasını diskten temizler.
+pub fn invalidate_cached(dir: &Path, id: &str) {
+    if !is_valid_video_id(id) {
+        return;
+    }
+    let prefix = format!("{id}.");
+    if let Ok(rd) = std::fs::read_dir(dir) {
+        for entry in rd.filter_map(Result::ok) {
+            let path = entry.path();
+            if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                if name.starts_with(&prefix) {
+                    let _ = std::fs::remove_file(&path);
+                }
+            }
+        }
+    }
 }
 
 fn touch_file(path: &Path) {
@@ -112,6 +147,31 @@ pub fn enforce_cache_limit(dir: &Path, keep_id: Option<&str>) {
         return;
     };
 
+    let active_ids: HashSet<String> = inflight_set()
+        .lock()
+        .map(|s| s.clone())
+        .unwrap_or_default();
+
+    // `.tmp` içindeki 5 dakikadan eski yarım kalmış geçici dosyaları güvenle temizle
+    let tmp_dir = dir.join(".tmp");
+    if let Ok(tmp_rd) = std::fs::read_dir(&tmp_dir) {
+        let now = std::time::SystemTime::now();
+        for entry in tmp_rd.filter_map(Result::ok) {
+            let path = entry.path();
+            if let Ok(meta) = entry.metadata() {
+                let age = meta
+                    .modified()
+                    .ok()
+                    .and_then(|m| now.duration_since(m).ok())
+                    .map(|d| d.as_secs())
+                    .unwrap_or(0);
+                if age > 300 {
+                    let _ = std::fs::remove_file(&path);
+                }
+            }
+        }
+    }
+
     let keep_prefix = keep_id.map(|id| format!("{id}."));
     let mut entries: Vec<(PathBuf, u64, std::time::SystemTime)> = Vec::new();
     let mut total_bytes: u64 = 0;
@@ -128,13 +188,20 @@ pub fn enforce_cache_limit(dir: &Path, keep_id: Option<&str>) {
             .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or_default();
+        let file_id = name.split('.').next().unwrap_or_default();
+        let is_active = active_ids.contains(file_id);
         let is_kept = keep_prefix
             .as_ref()
-            .is_some_and(|kp| name.starts_with(kp));
+            .is_some_and(|kp| name.starts_with(kp))
+            || is_active;
 
         let len = meta.len();
-        // Eskiden fallback yüzünden video olarak inmiş (>3.5 MB) veya bozuk .part dosyalarını anında sil
-        if !is_kept && (len > OVERSIZED_FILE_BYTES || name.ends_with(".part")) {
+        // Aktif olmayan yarım kalmış (.part/.ytdl) veya eski dev video (>3.5 MB) dosyalarını temizle
+        if !is_kept
+            && (len > OVERSIZED_FILE_BYTES
+                || name.ends_with(".part")
+                || name.ends_with(".ytdl"))
+        {
             let _ = std::fs::remove_file(&path);
             continue;
         }
@@ -155,12 +222,16 @@ pub fn enforce_cache_limit(dir: &Path, keep_id: Option<&str>) {
         if total_bytes <= MAX_CACHE_BYTES {
             break;
         }
+        let name = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or_default();
+        let file_id = name.split('.').next().unwrap_or_default();
+        if active_ids.contains(file_id) {
+            continue;
+        }
         if let Some(ref kp) = keep_prefix {
-            if path
-                .file_name()
-                .and_then(|n| n.to_str())
-                .is_some_and(|n| n.starts_with(kp))
-            {
+            if name.starts_with(kp) {
                 continue;
             }
         }
@@ -170,7 +241,7 @@ pub fn enforce_cache_limit(dir: &Path, keep_id: Option<&str>) {
     }
 }
 
-/// Parçanın yerel dosya yolunu döndürür; önbellekte yoksa en hızlı ses akışını indirir.
+/// Parçanın yerel dosya yolunu döndürür; önbellekte yoksa atomik olarak tam indirir.
 pub async fn ensure_audio(cache_dir: &Path, id: &str) -> Result<PathBuf, String> {
     if !is_valid_video_id(id) {
         return Err("Geçersiz parça kimliği".into());
@@ -179,7 +250,7 @@ pub async fn ensure_audio(cache_dir: &Path, id: &str) -> Result<PathBuf, String>
         return Ok(p);
     }
 
-    // Eğer aynı parça şu an arka planda (prefetch) indiriliyorsa bitmesini bekle
+    // Eğer aynı parça şu an arka planda (prefetch) indiriliyorsa, indirme %100 bitene kadar bekle
     let already_downloading = {
         let mut set = inflight_set().lock().unwrap();
         if set.contains(id) {
@@ -191,23 +262,87 @@ pub async fn ensure_audio(cache_dir: &Path, id: &str) -> Result<PathBuf, String>
     };
 
     if already_downloading {
-        for _ in 0..120 {
+        for _ in 0..400 {
             tokio::time::sleep(std::time::Duration::from_millis(150)).await;
-            if let Some(p) = find_cached(cache_dir, id) {
-                return Ok(p);
-            }
-            if !inflight_set().lock().unwrap().contains(id) {
+            let still_running = inflight_set()
+                .lock()
+                .map(|s| s.contains(id))
+                .unwrap_or(false);
+            if !still_running {
                 break;
             }
         }
         if let Some(p) = find_cached(cache_dir, id) {
             return Ok(p);
         }
+        // Önceki indirme başarısız olduysa yeniden kendimiz devralalım
+        let mut set = inflight_set().lock().unwrap();
+        if !set.contains(id) {
+            set.insert(id.to_string());
+        } else {
+            return Err("Parça indirilemedi, lütfen tekrar deneyin".into());
+        }
     }
 
-    let result = download_audio_inner(cache_dir, id).await;
-    inflight_set().lock().unwrap().remove(id);
-    result
+    let _guard = InflightGuard(id.to_string());
+    download_audio_inner(cache_dir, id).await
+}
+
+fn cleanup_staging(tmp_dir: &Path, stem: &str) {
+    let prefix = format!("{stem}.");
+    if let Ok(rd) = std::fs::read_dir(tmp_dir) {
+        for entry in rd.filter_map(Result::ok) {
+            let p = entry.path();
+            if let Some(name) = p.file_name().and_then(|n| n.to_str()) {
+                if name.starts_with(&prefix) {
+                    let _ = std::fs::remove_file(&p);
+                }
+            }
+        }
+    }
+}
+
+fn find_staged_complete(tmp_dir: &Path, stem: &str) -> Option<PathBuf> {
+    let prefix = format!("{stem}.");
+    std::fs::read_dir(tmp_dir)
+        .ok()?
+        .filter_map(Result::ok)
+        .map(|e| e.path())
+        .find(|p| {
+            p.file_name()
+                .and_then(|n| n.to_str())
+                .map(|name| {
+                    name.starts_with(&prefix)
+                        && !name.ends_with(".part")
+                        && !name.ends_with(".ytdl")
+                })
+                .unwrap_or(false)
+                && std::fs::metadata(p).map(|m| m.len() > 16_384).unwrap_or(false)
+        })
+}
+
+fn promote_staged_file(staged: &Path, cache_dir: &Path, id: &str) -> Result<PathBuf, String> {
+    let ext = staged
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("webm");
+    let final_path = cache_dir.join(format!("{id}.{ext}"));
+    // Varsa eski bozuk/yarım dosyayı temizle
+    invalidate_cached(cache_dir, id);
+    match std::fs::rename(staged, &final_path) {
+        Ok(()) => {
+            touch_file(&final_path);
+            Ok(final_path)
+        }
+        Err(_) => {
+            // Farklı disk/kilit ihtimaline karşı kopyala + sil yedeklemesi
+            std::fs::copy(staged, &final_path)
+                .map_err(|e| format!("Dosya önbelleğe taşınamadı: {e}"))?;
+            let _ = std::fs::remove_file(staged);
+            touch_file(&final_path);
+            Ok(final_path)
+        }
+    }
 }
 
 async fn download_audio_inner(cache_dir: &Path, id: &str) -> Result<PathBuf, String> {
@@ -215,11 +350,19 @@ async fn download_audio_inner(cache_dir: &Path, id: &str) -> Result<PathBuf, Str
         .await
         .map_err(|e| format!("Önbellek klasörü oluşturulamadı: {e}"))?;
 
+    let tmp_dir = cache_dir.join(".tmp");
+    tokio::fs::create_dir_all(&tmp_dir)
+        .await
+        .map_err(|e| format!("Geçici indirme klasörü oluşturulamadı: {e}"))?;
+
     let (prog, pre) = launcher().await?;
-    let out_tmpl = cache_dir.join(format!("{id}.%(ext)s"));
+    let nonce = DOWNLOAD_NONCE.fetch_add(1, Ordering::Relaxed);
+    let stem = format!("{id}_{nonce}");
+    let out_tmpl = tmp_dir.join(format!("{stem}.%(ext)s"));
     let url = format!("https://www.youtube.com/watch?v={id}");
 
-    // 1. Deneme: En küçük boyutlu yüksek verimli Opus/AAC ses akışı (249 ~50kbps / 600 ~35kbps / 139 ~48kbps => ~0.8 - 1.1 MB/şarkı)
+    // 1. Deneme: Atomik geçici klasörde, .part korumalı ve otomatik yeniden denemeli (retries) indirme
+    // ASLA `--no-part` kullanılmaz; indirme %100 bitmeden ana önbelleğe taşınmaz!
     let output = command(prog)
         .args(pre)
         .args([
@@ -229,8 +372,14 @@ async fn download_audio_inner(cache_dir: &Path, id: &str) -> Result<PathBuf, Str
             "+size,+abr",
             "--concurrent-fragments",
             "4",
+            "--retries",
+            "6",
+            "--fragment-retries",
+            "6",
+            "--retry-sleep",
+            "1",
+            "--no-continue",
             "--no-playlist",
-            "--no-part",
             "--no-mtime",
             "--quiet",
             "--no-warnings",
@@ -245,13 +394,18 @@ async fn download_audio_inner(cache_dir: &Path, id: &str) -> Result<PathBuf, Str
         .map_err(|e| format!("yt-dlp çalıştırılamadı: {e}"))?;
 
     if output.status.success() {
-        if let Some(p) = find_cached(cache_dir, id) {
+        if let Some(staged) = find_staged_complete(&tmp_dir, &stem) {
+            let final_path = promote_staged_file(&staged, cache_dir, id)?;
+            cleanup_staging(&tmp_dir, &stem);
             enforce_cache_limit(cache_dir, Some(id));
-            return Ok(p);
+            return Ok(final_path);
         }
     }
+    cleanup_staging(&tmp_dir, &stem);
 
-    // 2. Yedek Deneme: Yalnızca ses akışı veya en küçük boyutlu akış (asla 40 MB video indirmesin!)
+    // 2. Yedek Deneme: Tek iş parçacıklı kararlı ses akışı (parçalanma/fragment kopmalarını önler)
+    let fallback_stem = format!("{id}_{nonce}_fb");
+    let fallback_tmpl = tmp_dir.join(format!("{fallback_stem}.%(ext)s"));
     let fallback = command(prog)
         .args(pre)
         .args([
@@ -259,14 +413,20 @@ async fn download_audio_inner(cache_dir: &Path, id: &str) -> Result<PathBuf, Str
             "ba/worst",
             "-S",
             "+size",
+            "--retries",
+            "6",
+            "--fragment-retries",
+            "6",
+            "--retry-sleep",
+            "1",
+            "--no-continue",
             "--no-playlist",
-            "--no-part",
             "--no-mtime",
             "--quiet",
             "--no-warnings",
             "-o",
         ])
-        .arg(&out_tmpl)
+        .arg(&fallback_tmpl)
         .arg(&url)
         .stdout(Stdio::null())
         .stderr(Stdio::piped())
@@ -275,6 +435,7 @@ async fn download_audio_inner(cache_dir: &Path, id: &str) -> Result<PathBuf, Str
         .map_err(|e| format!("yt-dlp çalıştırılamadı: {e}"))?;
 
     if !fallback.status.success() {
+        cleanup_staging(&tmp_dir, &fallback_stem);
         let err = String::from_utf8_lossy(&fallback.stderr);
         let last = err
             .lines()
@@ -283,10 +444,14 @@ async fn download_audio_inner(cache_dir: &Path, id: &str) -> Result<PathBuf, Str
         return Err(format!("İndirme başarısız: {last}"));
     }
 
-    let found = find_cached(cache_dir, id)
-        .ok_or_else(|| "İndirilen dosya bulunamadı".to_string())?;
+    let staged = find_staged_complete(&tmp_dir, &fallback_stem).ok_or_else(|| {
+        cleanup_staging(&tmp_dir, &fallback_stem);
+        "İndirilen dosya tamamlanamadı".to_string()
+    })?;
+    let final_path = promote_staged_file(&staged, cache_dir, id)?;
+    cleanup_staging(&tmp_dir, &fallback_stem);
     enforce_cache_limit(cache_dir, Some(id));
-    Ok(found)
+    Ok(final_path)
 }
 
 /// Önbellek boyutu (bayt) ve dosya sayısı. Her sorguda otomatik olarak 350 MB sınırını ve dev video dosyalarını temizler.

@@ -1680,6 +1680,37 @@ export default function HeliosApp() {
   const [isFullscreenStage, setIsFullscreenStage] = useState(false);
   const [isWindowFullscreen, setIsWindowFullscreen] = useState(false);
   const fullscreenLyricsRef = useRef(null);
+  const healedTrackIdsRef = useRef(new Set());
+
+  const healTruncatedTrack = useCallback(
+    async (track, resumeSec = 0) => {
+      if (!track?.id || healedTrackIdsRef.current.has(track.id)) return false;
+      healedTrackIdsRef.current.add(track.id);
+      const token = loadTokenRef.current;
+      showToast("Yarım inmiş parça tespit edildi, tam sürümü indiriliyor...");
+      try {
+        const localPath = await tauriInvoke("redownload_track", { id: track.id });
+        if (token !== loadTokenRef.current || !audioRef.current) return true;
+        const audio = audioRef.current;
+        const wasPlaying = !audio.paused || isPlaying;
+        const freshUrl = `${toAssetUrl(localPath)}?v=${Date.now()}`;
+        audio.src = freshUrl;
+        audio.playbackRate = playbackRate;
+        applyAudioSettings();
+        if (resumeSec > 1) {
+          audio.currentTime = resumeSec;
+        }
+        if (wasPlaying) {
+          await audio.play().catch(() => {});
+        }
+        refreshCacheInfo();
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [applyAudioSettings, isPlaying, playbackRate, refreshCacheInfo, showToast]
+  );
 
   const handleToggleFullscreenMode = useCallback(async (stageOnly = false) => {
     try {
@@ -4130,7 +4161,18 @@ export default function HeliosApp() {
         onLoadedData={() => applyAudioSettings()}
         onLoadedMetadata={(e) => {
           const dur = e.currentTarget.duration;
-          if (Number.isFinite(dur) && dur > 0) setDuration(dur);
+          if (Number.isFinite(dur) && dur > 0) {
+            setDuration(dur);
+            const expected = Number(currentTrack?.duration_sec) || 0;
+            if (
+              currentTrack?.id &&
+              expected >= 45 &&
+              dur < expected * 0.72 &&
+              !healedTrackIdsRef.current.has(currentTrack.id)
+            ) {
+              healTruncatedTrack(currentTrack, e.currentTarget.currentTime || 0);
+            }
+          }
           e.currentTarget.playbackRate = playbackRate;
           applyAudioSettings();
         }}
@@ -4142,7 +4184,18 @@ export default function HeliosApp() {
             persistPlaybackState(t);
           }
         }}
-        onEnded={() => {
+        onEnded={async () => {
+          const expected = Number(currentTrack?.duration_sec) || 0;
+          const played = audioRef.current?.currentTime || currentTime || 0;
+          if (
+            currentTrack?.id &&
+            expected >= 45 &&
+            played < expected * 0.72 &&
+            !healedTrackIdsRef.current.has(currentTrack.id)
+          ) {
+            const healed = await healTruncatedTrack(currentTrack, played);
+            if (healed) return;
+          }
           if (repeatMode === "one" && audioRef.current) {
             audioRef.current.currentTime = 0;
             audioRef.current.play().catch(() => {});

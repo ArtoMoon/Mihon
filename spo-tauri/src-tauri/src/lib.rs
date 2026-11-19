@@ -56,6 +56,33 @@ async fn prepare_track(app: AppHandle, id: String) -> Result<String, String> {
     Ok(path.to_string_lossy().into_owned())
 }
 
+/// Eskiden yarım inmiş / bozuk kalmış bir parçayı önbellekten silip baştan %100 tam indirir.
+#[tauri::command]
+async fn redownload_track(app: AppHandle, id: String) -> Result<String, String> {
+    let dir = audio_cache_dir(&app)?;
+    let resolved_id = if let Some(sp_query) = id.strip_prefix("sp:") {
+        let clean = sp_query.trim().to_string();
+        let cached = sp_id_cache().lock().unwrap().get(&clean).cloned();
+        if let Some(vid) = cached {
+            vid
+        } else {
+            let results = music::search(&clean).await?;
+            let vid = results
+                .into_iter()
+                .find(|t| audio::is_valid_video_id(&t.id))
+                .map(|t| t.id)
+                .ok_or_else(|| format!("Parça eşleştirilemedi: {clean}"))?;
+            sp_id_cache().lock().unwrap().insert(clean, vid.clone());
+            vid
+        }
+    } else {
+        id
+    };
+    audio::invalidate_cached(&dir, &resolved_id);
+    let path = audio::ensure_audio(&dir, &resolved_id).await?;
+    Ok(path.to_string_lossy().into_owned())
+}
+
 #[derive(Serialize)]
 struct CacheInfo {
     bytes: u64,
@@ -1271,6 +1298,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             search,
             prepare_track,
+            redownload_track,
             cache_info,
             clear_cache,
             minimize_window,
