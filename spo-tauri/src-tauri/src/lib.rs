@@ -136,6 +136,17 @@ fn close_window(window: tauri::Window) {
 }
 
 #[tauri::command]
+fn open_external_url(app: AppHandle, url: String) -> Result<(), String> {
+    if !url.starts_with("https://") && !url.starts_with("http://") {
+        return Err("Geçersiz bağlantı".into());
+    }
+    use tauri_plugin_opener::OpenerExt;
+    app.opener()
+        .open_url(&url, None::<&str>)
+        .map_err(|e| format!("Bağlantı açılamadı: {e}"))
+}
+
+#[tauri::command]
 async fn import_spotify(input: String) -> Result<Vec<spotify::ImportedPlaylist>, String> {
     spotify::import_from_spotify(&input).await
 }
@@ -1305,6 +1316,7 @@ pub fn run() {
             toggle_maximize,
             toggle_fullscreen,
             close_window,
+            open_external_url,
             import_spotify,
             recommend_similar,
             update_discord_presence,
