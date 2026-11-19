@@ -552,27 +552,6 @@ export default function HeliosApp() {
             })
             .catch(() => {});
         }
-
-        // Eğer hem localStorage hem disk boşsa kullanıcının Spotify profil listelerini otomatik geri yükle
-        if (finalPlaylists.length === 0 && !localStorage.getItem("mihon_sp_auto_restored")) {
-          localStorage.setItem("mihon_sp_auto_restored", "1");
-          const importedList = await tauriInvoke("import_spotify", {
-            input: "https://open.spotify.com/user/plcdgnxjp7rv57rnc7g5ai4jl",
-          });
-          if (Array.isArray(importedList) && importedList.length > 0) {
-            const now = Date.now();
-            finalPlaylists = importedList.map((pl, idx) => ({
-              id: `sp_${now}_${idx}`,
-              name: pl.name || "Spotify Listem",
-              cover: pl.cover || "",
-              tracks: Array.isArray(pl.tracks) ? pl.tracks : [],
-              createdAt: now + idx,
-              source: "spotify",
-            }));
-            setCustomPlaylists(finalPlaylists);
-            localStorage.setItem("custom_playlists", JSON.stringify(finalPlaylists));
-          }
-        }
       } catch {
         /* ignore */
       } finally {
@@ -1767,6 +1746,55 @@ export default function HeliosApp() {
   const [activeGenreId, setActiveGenreId] = useState("all");
   const [playlistFilter, setPlaylistFilter] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+
+  const handleResetAllData = useCallback(async () => {
+    try {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.removeAttribute("src");
+        audioRef.current.load();
+      }
+      localStorage.removeItem("liked");
+      localStorage.removeItem("recent");
+      localStorage.removeItem("custom_playlists");
+      localStorage.removeItem("mihon_playback_state");
+      localStorage.removeItem("mihon_sp_auto_restored");
+      localStorage.removeItem("volume");
+      localStorage.removeItem("playback_rate");
+
+      setCustomPlaylists([]);
+      setLikedTracks([]);
+      setRecentTracks([]);
+      setQueue([]);
+      setQueueIndex(-1);
+      setCurrentTrack(null);
+      setIsPlaying(false);
+      setCurrentTime(0);
+      setDuration(0);
+      setSearchQuery("");
+      setHasSearched(false);
+      setPlaylistFilter("");
+      setSelectedPlaylistId(null);
+      setActiveView("home");
+      setIsResetModalOpen(false);
+
+      await tauriInvoke("save_library", {
+        data: {
+          custom_playlists: [],
+          liked: [],
+          recent: [],
+          playback_state: null,
+        },
+      }).catch(() => {});
+      await tauriInvoke("clear_cache").catch(() => {});
+      await tauriInvoke("clear_discord_presence").catch(() => {});
+      refreshCacheInfo();
+      showToast("Tüm veriler ve önbellek temizlendi");
+    } catch (e) {
+      showToast(`Temizleme hatası: ${e}`, true);
+    }
+  }, [refreshCacheInfo, showToast]);
 
   const nonEmptyPlaylists = useMemo(
     () => customPlaylists.filter((pl) => Array.isArray(pl.tracks) && pl.tracks.length > 0),
@@ -2138,23 +2166,14 @@ export default function HeliosApp() {
                   <span title={`${cacheStats.files} şarkı önbellekte`}>
                     {formatBytes(cacheStats.bytes)}
                   </span>
-                  {cacheStats.files > 0 && (
-                    <button
-                      onClick={async () => {
-                        try {
-                          await tauriInvoke("clear_cache");
-                          refreshCacheInfo();
-                          showToast("Önbellek temizlendi");
-                        } catch (e) {
-                          showToast(String(e), true);
-                        }
-                      }}
-                      className="text-[#5e5773] hover:text-rose-400 transition-colors"
-                      title="Önbelleği Temizle"
-                    >
-                      <Trash2 size={11} />
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsResetModalOpen(true)}
+                    className="text-[#5e5773] hover:text-rose-400 transition-colors"
+                    title="Tüm Verileri ve Önbelleği Temizle"
+                  >
+                    <Trash2 size={12} />
+                  </button>
                 </div>
               </div>
             </div>
@@ -3326,6 +3345,74 @@ export default function HeliosApp() {
                 className="p-2 text-[#d4cfe3] hover:text-white transition-colors"
               >
                 <SkipForward size={22} className="fill-current" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== MODAL 0: VERİLERİ VE ÖNBELLEĞİ TEMİZLE ===== */}
+      {isResetModalOpen && (
+        <div
+          onClick={() => setIsResetModalOpen(false)}
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-2xl bg-[#110d1b] border border-white/15 p-6 shadow-2xl space-y-4"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Trash2 size={18} className="text-rose-400" />
+                <span>Verileri Temizle</span>
+              </h3>
+              <button
+                onClick={() => setIsResetModalOpen(false)}
+                className="p-1 rounded-lg text-[#9890ad] hover:text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-[#9890ad] leading-relaxed">
+              Sadece indirilen şarkı önbelleğini (
+              <strong className="text-white">{formatBytes(cacheStats.bytes)}</strong>)
+              temizleyebilir veya tüm çalma listelerini, beğenilenleri ve geçmişi
+              tamamen sıfırlayabilirsin.
+            </p>
+
+            <div className="space-y-2 pt-1">
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await tauriInvoke("clear_cache");
+                    refreshCacheInfo();
+                    setIsResetModalOpen(false);
+                    showToast("Ses önbelleği temizlendi");
+                  } catch (e) {
+                    showToast(String(e), true);
+                  }
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs font-semibold text-white transition-colors"
+              >
+                Sadece Ses Önbelleğini Temizle ({formatBytes(cacheStats.bytes)})
+              </button>
+
+              <button
+                type="button"
+                onClick={handleResetAllData}
+                className="w-full py-2.5 px-4 rounded-xl bg-rose-600/90 hover:bg-rose-500 text-xs font-bold text-white transition-colors"
+              >
+                Tüm Verileri Sıfırla (Listeler, Geçmiş & Önbellek)
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsResetModalOpen(false)}
+                className="w-full py-2 rounded-xl text-xs font-medium text-[#9890ad] hover:text-white"
+              >
+                Vazgeç
               </button>
             </div>
           </div>
