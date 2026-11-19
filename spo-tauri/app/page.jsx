@@ -1764,158 +1764,166 @@ export default function HeliosApp() {
     return FEATURED_ARTISTS.slice(start, start + 4);
   }, [artistPageIdx]);
 
+  const [activeGenreId, setActiveGenreId] = useState("all");
+  const [playlistFilter, setPlaylistFilter] = useState("");
+  const [hasSearched, setHasSearched] = useState(false);
+
+  const nonEmptyPlaylists = useMemo(
+    () => customPlaylists.filter((pl) => Array.isArray(pl.tracks) && pl.tracks.length > 0),
+    [customPlaylists]
+  );
+
+  const playlistTotalDurationLabel = useMemo(() => {
+    if (!activePlaylistObj?.tracks?.length) return "0 dk";
+    const totalSec = activePlaylistObj.tracks.reduce(
+      (acc, t) => acc + (Number(t.duration_sec) || 210),
+      0
+    );
+    const hrs = Math.floor(totalSec / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    return hrs > 0 ? `${hrs} sa ${mins} dk` : `${mins} dk`;
+  }, [activePlaylistObj]);
+
+  const visibleTrackList = useMemo(() => {
+    if (activeView === "playlist-detail" && playlistFilter.trim()) {
+      const q = playlistFilter.trim().toLowerCase();
+      return displayedTracks.filter(
+        (t) =>
+          (t.title || "").toLowerCase().includes(q) ||
+          (t.artist || "").toLowerCase().includes(q) ||
+          (t.album || "").toLowerCase().includes(q)
+      );
+    }
+    if (activeView === "home" && !hasSearched) {
+      return recentTracks.slice(0, 15);
+    }
+    return displayedTracks;
+  }, [activeView, playlistFilter, displayedTracks, hasSearched, recentTracks]);
+
   return (
-    <div className="relative h-screen w-screen overflow-hidden flex flex-col bg-[#090514] text-purple-50 select-none">
-      {/* Kozmik Mor / Violet / Fuchsia Aurora Arka Plan Efektleri */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
-        <div
-          className="absolute -top-36 left-1/4 w-[650px] h-[440px] rounded-full blur-[145px] opacity-35 cosmic-glow"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(168,85,247,0.65) 0%, rgba(217,70,239,0.4) 55%, transparent 100%)",
-          }}
-        />
-        <div
-          className="absolute -bottom-36 -left-20 w-[540px] h-[540px] rounded-full blur-[135px] opacity-35"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(139,92,246,0.55) 0%, rgba(192,38,211,0.35) 60%, transparent 100%)",
-          }}
-        />
-        <div
-          className="absolute top-1/4 -right-24 w-[520px] h-[520px] rounded-full blur-[150px] opacity-30"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(192,132,252,0.55) 0%, rgba(124,58,237,0.4) 65%, transparent 100%)",
-          }}
-        />
-      </div>
+    <div className="relative h-screen w-screen overflow-hidden flex flex-col bg-[#09070f] text-[#f6f4fb] select-none">
+      {/* Çok hafif, göz yormayan tek ortam ışığı */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          background:
+            "radial-gradient(60% 45% at 25% 0%, rgba(139, 92, 246, 0.12), transparent 70%), radial-gradient(45% 45% at 85% 100%, rgba(167, 139, 250, 0.08), transparent 70%)",
+        }}
+      />
 
-      {/* ===== ANA 3 SÜTUNLU SYNTHESIA (MOR TEMA) PENCERE DÜZENİ ===== */}
+      {/* ===== ANA ALAN: SOL SADE MENÜ + FERAH ORTA SAHNE (SAĞ PANEL YOK) ===== */}
       <div className="relative z-10 flex-1 flex min-h-0 overflow-hidden">
-        {/* 1. SOL SÜTUN: SYNTHESIA KENAR ÇUBUĞU (M I H O N) */}
+        {/* 1. SOL SADE KENAR ÇUBUĞU */}
         {isLeftSidebarOpen ? (
-          <aside className="relative w-60 shrink-0 bg-[#100821]/90 border-r border-purple-400/[0.1] backdrop-blur-2xl flex flex-col justify-between overflow-hidden">
-            {/* Sol Alt Kozmik Mor Dalga Grafiği */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-56 overflow-hidden opacity-55">
-              <div className="absolute -bottom-12 -left-10 w-64 h-64 rounded-full bg-gradient-to-tr from-purple-600/50 via-fuchsia-500/35 to-transparent blur-2xl" />
-              <svg
-                viewBox="0 0 240 180"
-                fill="none"
-                className="absolute bottom-0 left-0 w-full h-44"
-              >
-                <path
-                  d="M-20 180 C 30 90, 110 140, 260 40 L 260 180 Z"
-                  fill="url(#mihonWave1)"
-                  fillOpacity="0.32"
-                />
-                <path
-                  d="M-20 180 C 60 120, 140 70, 260 110 L 260 180 Z"
-                  fill="url(#mihonWave2)"
-                  fillOpacity="0.26"
-                />
-                <defs>
-                  <linearGradient id="mihonWave1" x1="0" y1="0" x2="240" y2="180" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="#c084fc" />
-                    <stop offset="50%" stopColor="#a855f7" />
-                    <stop offset="100%" stopColor="#e879f9" />
-                  </linearGradient>
-                  <linearGradient id="mihonWave2" x1="240" y1="0" x2="0" y2="180" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="#d946ef" />
-                    <stop offset="100%" stopColor="#7c3aed" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
-
-            <div className="relative z-10 flex flex-col flex-1 min-h-0 p-4">
-              {/* Üst Marka Başlığı: M I H O N */}
+          <aside className="w-60 shrink-0 bg-[#110d1b]/75 border-r border-white/[0.065] backdrop-blur-2xl flex flex-col justify-between p-4">
+            <div className="flex flex-col flex-1 min-h-0">
+              {/* Marka & Sürüm */}
               <div
                 data-tauri-drag-region
-                className="flex items-center justify-between pt-1 pb-6 px-2"
+                className="flex items-center justify-between px-2 pb-6"
               >
-                <span
-                  data-tauri-drag-region
-                  className="text-lg font-light tracking-[0.34em] uppercase text-purple-100 drop-shadow-[0_0_14px_rgba(192,132,252,0.5)]"
-                >
-                  MIHON
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setIsLeftSidebarOpen(false)}
-                  className="p-1.5 rounded-lg text-purple-300/70 hover:text-purple-200 hover:bg-purple-500/10 transition-colors"
-                  title="Sol Menüyü Gizle"
-                >
-                  <PanelLeftClose size={14} />
-                </button>
+                <div data-tauri-drag-region className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#c4b5fd] to-[#7c3aed] flex items-center justify-center text-[#09070f] font-extrabold text-xs">
+                    M
+                  </div>
+                  <span
+                    data-tauri-drag-region
+                    className="text-sm font-bold tracking-[0.12em] uppercase text-[#f6f4fb]"
+                  >
+                    Mihon
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={handleCheckOrInstallUpdate}
+                    disabled={isCheckingUpdate || isInstallingUpdate}
+                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-full transition-colors ${
+                      updateInfo?.has_update
+                        ? "bg-violet-500/30 text-violet-200 animate-pulse"
+                        : "bg-[#a78bfa]/15 text-[#c4b5fd] hover:bg-[#a78bfa]/25"
+                    }`}
+                    title="Güncelleme Kontrolü"
+                  >
+                    {isInstallingUpdate
+                      ? "..."
+                      : updateInfo?.has_update
+                      ? `v${updateInfo.latest_version}`
+                      : `v${updateInfo?.current_version || "2.1.0"}`}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsLeftSidebarOpen(false)}
+                    className="p-1 rounded-md text-[#9890ad] hover:text-white hover:bg-white/[0.05] transition-colors"
+                    title="Menüyü Gizle"
+                  >
+                    <PanelLeftClose size={14} />
+                  </button>
+                </div>
               </div>
 
-              {/* Ana Gezinme Menüsü (Parlayan Mor Sol Çizgi ile) */}
-              <nav className="space-y-1.5">
+              {/* Ana Menü */}
+              <nav className="space-y-0.5">
                 <button
-                  onClick={() => setActiveView("home")}
-                  className={`w-full flex items-center gap-3.5 px-4 py-2.5 rounded-r-xl text-xs font-semibold tracking-[0.12em] uppercase transition-all ${
+                  onClick={() => {
+                    setHasSearched(false);
+                    setSearchQuery("");
+                    setPlaylistFilter("");
+                    setActiveView("home");
+                  }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[13px] transition-all ${
                     activeView === "home"
-                      ? "border-l-[3px] border-purple-400 bg-gradient-to-r from-purple-500/25 via-purple-900/40 to-transparent text-white shadow-[0_4px_20px_rgba(168,85,247,0.18)]"
-                      : "border-l-[3px] border-transparent text-purple-200/60 hover:text-white hover:bg-purple-500/[0.06]"
+                      ? "bg-[#a78bfa]/15 text-white font-semibold"
+                      : "text-[#9890ad] hover:text-white hover:bg-white/[0.04] font-medium"
                   }`}
                 >
                   <Home
                     size={16}
-                    className={
-                      activeView === "home"
-                        ? "text-purple-300 drop-shadow-[0_0_8px_rgba(192,132,252,0.9)]"
-                        : "text-purple-300/60"
-                    }
+                    className={activeView === "home" ? "text-[#a78bfa]" : ""}
                   />
-                  <span>HOME</span>
+                  <span>Ana Sayfa</span>
                 </button>
 
                 <button
                   onClick={(e) => openSimilarRecommendations(currentTrack, e)}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-r-xl text-xs font-semibold tracking-[0.12em] uppercase transition-all ${
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-[10px] text-[13px] transition-all ${
                     activeView === "recommendations"
-                      ? "border-l-[3px] border-purple-400 bg-gradient-to-r from-purple-500/25 via-purple-900/40 to-transparent text-white shadow-[0_4px_20px_rgba(168,85,247,0.18)]"
-                      : "border-l-[3px] border-transparent text-purple-200/60 hover:text-white hover:bg-purple-500/[0.06]"
+                      ? "bg-[#a78bfa]/15 text-white font-semibold"
+                      : "text-[#9890ad] hover:text-white hover:bg-white/[0.04] font-medium"
                   }`}
                 >
-                  <span className="flex items-center gap-3.5">
-                    <Compass
+                  <span className="flex items-center gap-3">
+                    <Sparkles
                       size={16}
                       className={
-                        activeView === "recommendations"
-                          ? "text-purple-300 drop-shadow-[0_0_8px_rgba(192,132,252,0.9)]"
-                          : "text-purple-300/60"
+                        activeView === "recommendations" ? "text-[#a78bfa]" : ""
                       }
                     />
-                    <span>DISCOVER</span>
+                    <span>AI Keşif</span>
                   </span>
-                  <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-purple-500/25 text-purple-200 border border-purple-400/40">
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[#a78bfa]/15 text-[#c4b5fd]">
                     AI
                   </span>
                 </button>
 
                 <button
                   onClick={() => setActiveView("liked")}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-r-xl text-xs font-semibold tracking-[0.12em] uppercase transition-all ${
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-[10px] text-[13px] transition-all ${
                     activeView === "liked"
-                      ? "border-l-[3px] border-purple-400 bg-gradient-to-r from-purple-500/25 via-purple-900/40 to-transparent text-white shadow-[0_4px_20px_rgba(168,85,247,0.18)]"
-                      : "border-l-[3px] border-transparent text-purple-200/60 hover:text-white hover:bg-purple-500/[0.06]"
+                      ? "bg-[#a78bfa]/15 text-white font-semibold"
+                      : "text-[#9890ad] hover:text-white hover:bg-white/[0.04] font-medium"
                   }`}
                 >
-                  <span className="flex items-center gap-3.5">
+                  <span className="flex items-center gap-3">
                     <Heart
                       size={16}
-                      className={
-                        activeView === "liked"
-                          ? "text-purple-300 drop-shadow-[0_0_8px_rgba(192,132,252,0.9)]"
-                          : "text-purple-300/60"
-                      }
+                      className={activeView === "liked" ? "text-[#a78bfa]" : ""}
                     />
-                    <span>BEĞENİLENLER</span>
+                    <span>Beğenilenler</span>
                   </span>
                   {likedTracks.length > 0 && (
-                    <span className="text-[10px] text-purple-300/70 font-bold">
+                    <span className="text-[11px] text-[#5e5773]">
                       {likedTracks.length}
                     </span>
                   )}
@@ -1923,25 +1931,21 @@ export default function HeliosApp() {
 
                 <button
                   onClick={() => setActiveView("recent")}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-r-xl text-xs font-semibold tracking-[0.12em] uppercase transition-all ${
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-[10px] text-[13px] transition-all ${
                     activeView === "recent"
-                      ? "border-l-[3px] border-purple-400 bg-gradient-to-r from-purple-500/25 via-purple-900/40 to-transparent text-white shadow-[0_4px_20px_rgba(168,85,247,0.18)]"
-                      : "border-l-[3px] border-transparent text-purple-200/60 hover:text-white hover:bg-purple-500/[0.06]"
+                      ? "bg-[#a78bfa]/15 text-white font-semibold"
+                      : "text-[#9890ad] hover:text-white hover:bg-white/[0.04] font-medium"
                   }`}
                 >
-                  <span className="flex items-center gap-3.5">
+                  <span className="flex items-center gap-3">
                     <Clock
                       size={16}
-                      className={
-                        activeView === "recent"
-                          ? "text-purple-300 drop-shadow-[0_0_8px_rgba(192,132,252,0.9)]"
-                          : "text-purple-300/60"
-                      }
+                      className={activeView === "recent" ? "text-[#a78bfa]" : ""}
                     />
-                    <span>GEÇMİŞ</span>
+                    <span>Geçmiş</span>
                   </span>
                   {recentTracks.length > 0 && (
-                    <span className="text-[10px] text-purple-300/70 font-bold">
+                    <span className="text-[11px] text-[#5e5773]">
                       {recentTracks.length}
                     </span>
                   )}
@@ -1949,135 +1953,139 @@ export default function HeliosApp() {
 
                 <button
                   onClick={() => setActiveView("playlists")}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-r-xl text-xs font-semibold tracking-[0.12em] uppercase transition-all ${
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-[10px] text-[13px] transition-all ${
                     activeView === "playlists"
-                      ? "border-l-[3px] border-purple-400 bg-gradient-to-r from-purple-500/25 via-purple-900/40 to-transparent text-white shadow-[0_4px_20px_rgba(168,85,247,0.18)]"
-                      : "border-l-[3px] border-transparent text-purple-200/60 hover:text-white hover:bg-purple-500/[0.06]"
+                      ? "bg-[#a78bfa]/15 text-white font-semibold"
+                      : "text-[#9890ad] hover:text-white hover:bg-white/[0.04] font-medium"
                   }`}
                 >
-                  <span className="flex items-center gap-3.5">
+                  <span className="flex items-center gap-3">
                     <ListMusic
                       size={16}
                       className={
-                        activeView === "playlists"
-                          ? "text-purple-300 drop-shadow-[0_0_8px_rgba(192,132,252,0.9)]"
-                          : "text-purple-300/60"
+                        activeView === "playlists" ? "text-[#a78bfa]" : ""
                       }
                     />
-                    <span>LIBRARY</span>
+                    <span>Çalma Listeleri</span>
                   </span>
-                  <span className="text-[10px] text-purple-300/70 font-bold">
+                  <span className="text-[11px] text-[#5e5773]">
                     {customPlaylists.length}
                   </span>
                 </button>
               </nav>
 
-              {/* PLAYLISTS Bölümü */}
-              <div className="mt-6 pt-5 border-t border-purple-400/[0.1] flex-1 flex flex-col min-h-0">
-                <div className="flex items-center justify-between px-2 mb-3">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-purple-300/70">
-                    PLAYLISTS
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => setIsSpotifyModalOpen(true)}
-                      className="flex items-center gap-1 text-[10px] font-bold text-purple-200 hover:text-white px-2 py-0.5 rounded-md bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/35 transition-colors"
-                      title="Spotify Listelerimi Aktar"
-                    >
-                      <Disc3 size={11} />
-                      <span>Spotify</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setTrackForPlaylistModal(null);
-                        setNewPlaylistName("");
-                        setIsCreateModalOpen(true);
-                      }}
-                      className="p-1 rounded-md text-purple-300 hover:text-white bg-purple-500/15 hover:bg-purple-500/30 border border-purple-400/30 transition-colors"
-                      title="Yeni Çalma Listesi Oluştur"
-                    >
-                      <Plus size={13} />
-                    </button>
-                  </div>
-                </div>
+              <div className="h-px bg-white/[0.065] my-4 mx-2" />
 
-                <div className="flex-1 overflow-y-auto space-y-1 pr-1">
-                  {customPlaylists.length === 0 ? (
-                    <button
-                      onClick={() => {
-                        setTrackForPlaylistModal(null);
-                        setNewPlaylistName("");
-                        setIsCreateModalOpen(true);
-                      }}
-                      className="w-full p-3 rounded-xl border border-dashed border-purple-400/20 hover:border-purple-400/50 text-left transition-colors group"
-                    >
-                      <div className="flex items-center gap-2 text-xs font-semibold text-purple-200 group-hover:text-purple-300">
-                        <FolderPlus size={14} />
-                        <span>İlk Listeni Oluştur</span>
-                      </div>
-                    </button>
-                  ) : (
-                    customPlaylists.map((pl, idx) => {
-                      const isSelected =
-                        activeView === "playlist-detail" && selectedPlaylistId === pl.id;
-                      const PlaylistIcon =
-                        idx % 3 === 0 ? Music2 : idx % 3 === 1 ? Sparkles : ListMusic;
-                      return (
-                        <div
-                          key={pl.id}
-                          onClick={() => {
-                            setSelectedPlaylistId(pl.id);
-                            setActiveView("playlist-detail");
-                          }}
-                          className={`group flex items-center gap-3 px-2.5 py-2 rounded-xl cursor-pointer transition-all ${
-                            isSelected
-                              ? "bg-purple-500/20 text-white border border-purple-400/40"
-                              : "hover:bg-purple-500/[0.08] text-purple-100/80 border border-transparent"
-                          }`}
-                        >
-                          <PlaylistIcon
-                            size={15}
-                            className={
-                              isSelected
-                                ? "text-purple-300 shrink-0"
-                                : "text-purple-300/60 group-hover:text-purple-300 shrink-0"
-                            }
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium truncate">{pl.name}</p>
-                            <p className="text-[10px] text-purple-300/50">
-                              {pl.tracks.length} parça
-                            </p>
-                          </div>
+              {/* Listelerim */}
+              <div className="flex items-center justify-between px-2.5 pb-2.5">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#5e5773]">
+                  Listelerim
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setIsSpotifyModalOpen(true)}
+                    className="w-6 h-6 rounded-md text-[#9890ad] hover:text-emerald-400 hover:bg-white/[0.05] flex items-center justify-center transition-colors"
+                    title="Spotify Listelerimi Aktar"
+                  >
+                    <Disc3 size={13} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTrackForPlaylistModal(null);
+                      setNewPlaylistName("");
+                      setIsCreateModalOpen(true);
+                    }}
+                    className="w-6 h-6 rounded-md text-[#9890ad] hover:text-white hover:bg-white/[0.05] flex items-center justify-center transition-colors"
+                    title="Yeni Liste Oluştur"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-0.5 pr-1">
+                {customPlaylists.length === 0 ? (
+                  <button
+                    onClick={() => {
+                      setTrackForPlaylistModal(null);
+                      setNewPlaylistName("");
+                      setIsCreateModalOpen(true);
+                    }}
+                    className="w-full px-3 py-2.5 rounded-lg border border-dashed border-white/10 hover:border-[#a78bfa]/40 text-left text-xs text-[#9890ad] hover:text-white transition-colors"
+                  >
+                    + İlk Listeni Oluştur
+                  </button>
+                ) : (
+                  customPlaylists.map((pl) => {
+                    const isSelected =
+                      activeView === "playlist-detail" &&
+                      selectedPlaylistId === pl.id;
+                    return (
+                      <div
+                        key={pl.id}
+                        onClick={() => {
+                          setPlaylistFilter("");
+                          setSelectedPlaylistId(pl.id);
+                          setActiveView("playlist-detail");
+                        }}
+                        className={`group flex items-center justify-between px-2.5 py-2 rounded-[9px] cursor-pointer text-[13px] transition-colors ${
+                          isSelected
+                            ? "bg-[#a78bfa]/15 text-white font-medium"
+                            : "text-[#9890ad] hover:bg-white/[0.04] hover:text-white"
+                        }`}
+                      >
+                        <span className="truncate pr-2">{pl.name}</span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <span className="text-[11px] text-[#5e5773] group-hover:hidden">
+                            {pl.tracks.length}
+                          </span>
                           <button
                             onClick={(e) => handleDeletePlaylist(pl.id, e)}
-                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-purple-300/50 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
+                            className="hidden group-hover:flex p-1 rounded text-[#9890ad] hover:text-rose-400"
                             title="Listeyi Sil"
                           >
                             <Trash2 size={12} />
                           </button>
                         </div>
-                      );
-                    })
-                  )}
-                </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
+            </div>
 
-              {/* Alt Önbellek (350 MB Akıllı LRU) Kartı */}
-              <div className="mt-3 p-2.5 rounded-xl bg-[#160b2e]/85 border border-purple-400/15 backdrop-blur-xl flex items-center justify-between">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-7 h-7 rounded-lg bg-purple-500/20 border border-purple-400/35 flex items-center justify-center text-purple-300 shrink-0">
-                    <HardDrive size={14} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-semibold text-purple-100 truncate">
-                      {formatBytes(cacheStats.bytes)} Önbellek
-                    </p>
-                    <p className="text-[10px] text-purple-300/60">
-                      {cacheStats.files} şarkı hazır
-                    </p>
-                  </div>
-                </div>
+            {/* Alt Sade Durum Satırı: Discord + Önbellek */}
+            <div className="mt-3 pt-3 border-t border-white/[0.065] flex items-center justify-between px-1.5 text-[11px] text-[#5e5773]">
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !discordEnabled;
+                  setDiscordEnabled(next);
+                  showToast(
+                    next
+                      ? "Discord Rich Presence aktif"
+                      : "Discord Rich Presence kapatıldı"
+                  );
+                }}
+                className="inline-flex items-center gap-1.5 text-[#9890ad] hover:text-white transition-colors"
+                title="Discord Rich Presence Aç/Kapat"
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    discordEnabled && discordConnected
+                      ? "bg-[#a78bfa]"
+                      : discordEnabled
+                      ? "bg-[#a78bfa]/60"
+                      : "bg-white/20"
+                  }`}
+                />
+                <span>Discord</span>
+              </button>
+
+              <div className="flex items-center gap-1.5">
+                <span title={`${cacheStats.files} şarkı önbellekte`}>
+                  {formatBytes(cacheStats.bytes)}
+                </span>
                 {cacheStats.files > 0 && (
                   <button
                     onClick={async () => {
@@ -2089,10 +2097,10 @@ export default function HeliosApp() {
                         showToast(String(e), true);
                       }
                     }}
-                    className="p-1.5 rounded-lg text-purple-300/60 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                    className="text-[#5e5773] hover:text-rose-400 transition-colors"
                     title="Önbelleği Temizle"
                   >
-                    <Trash2 size={13} />
+                    <Trash2 size={11} />
                   </button>
                 )}
               </div>
@@ -2102,211 +2110,108 @@ export default function HeliosApp() {
           <button
             type="button"
             onClick={() => setIsLeftSidebarOpen(true)}
-            className="w-8 shrink-0 bg-[#100821]/90 hover:bg-[#190d33] border-r border-purple-400/10 flex flex-col items-center justify-center gap-2 text-purple-300/70 hover:text-purple-200 transition-all group"
-            title="Sol Menüyü Aç"
+            className="w-9 shrink-0 bg-[#110d1b]/75 hover:bg-[#171224] border-r border-white/[0.065] flex items-center justify-center text-[#9890ad] hover:text-white transition-colors"
+            title="Menüyü Aç"
           >
             <PanelLeftOpen size={15} />
           </button>
         )}
 
-        {/* 2. ORTA + SAĞ ALAN (Üst Pencere/Arama Çubuğu + İçerik + Sağ NOW PLAYING) */}
-        <div className="flex-1 flex flex-col min-w-0 min-h-0">
-          {/* ÜST ÇUBUK (`< >` Oklar + Arama Çubuğu + Tam Ekran Modu + Pencere Kontrolleri) */}
+        {/* 2. FERAH ORTA SAHNE */}
+        <main className="flex-1 min-w-0 flex flex-col">
+          {/* Üst Sade Çubuk */}
           <header
             data-tauri-drag-region
-            className="h-14 px-6 flex items-center justify-between border-b border-purple-400/[0.08] bg-[#100821]/65 backdrop-blur-2xl shrink-0"
+            className="h-16 px-8 flex items-center justify-between gap-4 shrink-0"
           >
-            {/* Sol: Geri / İleri Okları + Arama Kutusu */}
-            <div data-tauri-drag-region className="flex items-center gap-2.5 flex-1 max-w-xl">
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => setActiveView("home")}
-                  className="w-7 h-7 rounded-lg bg-purple-500/[0.07] hover:bg-purple-500/15 border border-purple-400/15 flex items-center justify-center text-purple-200/70 hover:text-white transition-colors"
-                  title="Ana Sayfa"
-                >
-                  <ChevronLeft size={14} />
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => openSimilarRecommendations(currentTrack, e)}
-                  className="w-7 h-7 rounded-lg bg-purple-500/[0.07] hover:bg-purple-500/15 border border-purple-400/15 flex items-center justify-center text-purple-200/70 hover:text-white transition-colors"
-                  title="AI Keşif"
-                >
-                  <ChevronRight size={14} />
-                </button>
-              </div>
-
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!searchQuery.trim()) return;
-                  setActiveView("home");
-                  performSearch(
-                    searchQuery,
-                    `“${searchQuery.trim()}”`,
-                    "YouTube Music anlık arama sonuçları"
-                  );
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!searchQuery.trim()) return;
+                setHasSearched(true);
+                setActiveView("home");
+                performSearch(
+                  searchQuery,
+                  `“${searchQuery.trim()}”`,
+                  "Anlık arama sonuçları"
+                );
+              }}
+              className="flex items-center gap-2.5 w-full max-w-sm h-9 px-3.5 rounded-[11px] bg-white/[0.04] focus-within:bg-[#171224] border border-white/[0.065] focus-within:border-[#a78bfa]/40 transition-all"
+            >
+              <Search size={14} className="text-[#9890ad] shrink-0" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (!e.target.value.trim()) setHasSearched(false);
                 }}
-                className="flex items-center gap-2.5 w-full max-w-sm px-3.5 py-1.5 rounded-xl bg-[#190f32]/90 hover:bg-[#211342] focus-within:bg-[#1d113a] focus-within:ring-1 focus-within:ring-purple-400/60 border border-purple-400/15 transition-all"
-              >
-                <Search size={14} className="text-purple-300/70 shrink-0" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search / Şarkı veya sanatçı ara..."
-                  className="w-full bg-transparent text-xs text-purple-50 placeholder:text-purple-300/50 focus:outline-none"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery("")}
-                    className="text-purple-300/60 hover:text-white"
-                  >
-                    <X size={13} />
-                  </button>
-                )}
-              </form>
-            </div>
+                placeholder="Şarkı, sanatçı veya albüm ara..."
+                className="w-full bg-transparent text-[13px] text-[#f6f4fb] placeholder:text-[#5e5773] focus:outline-none"
+              />
+              {searchQuery ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setHasSearched(false);
+                  }}
+                  className="text-[#9890ad] hover:text-white"
+                >
+                  <X size={13} />
+                </button>
+              ) : (
+                <span className="text-[10px] text-[#5e5773] px-1.5 py-0.5 rounded border border-white/[0.065] shrink-0">
+                  Ctrl K
+                </span>
+              )}
+            </form>
 
-            {/* Sağ: Tam Ekran Modu, Sözler, Discord RPC, Güncelleme, Profil ve Pencere Kontrolleri */}
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleToggleFullscreenMode(false)}
-                className={`flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all ${
-                  isFullscreenStage || isWindowFullscreen
-                    ? "bg-purple-500/30 text-purple-100 border-purple-400/60 shadow-[0_0_16px_rgba(168,85,247,0.4)]"
-                    : "bg-purple-500/10 text-purple-200 border-purple-400/25 hover:bg-purple-500/20"
-                }`}
-                title="Tam Ekran Modu (F11)"
-              >
-                {isFullscreenStage || isWindowFullscreen ? (
-                  <Minimize2 size={13} className="text-purple-300" />
-                ) : (
-                  <Maximize2 size={13} className="text-purple-300" />
-                )}
-                <span className="hidden sm:inline">Tam Ekran</span>
-              </button>
-
               <button
                 type="button"
                 onClick={() =>
                   setActiveView(activeView === "lyrics" ? "home" : "lyrics")
                 }
-                className={`flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all ${
+                className={`h-8 px-3 rounded-[9px] border text-xs font-medium inline-flex items-center gap-1.5 transition-all ${
                   activeView === "lyrics"
-                    ? "bg-purple-500/25 text-purple-200 border-purple-400/50 shadow-[0_0_12px_rgba(168,85,247,0.35)]"
-                    : "bg-white/[0.04] text-purple-200/80 border-white/10 hover:bg-purple-500/15"
+                    ? "bg-[#a78bfa]/15 text-white border-[#a78bfa]/40"
+                    : "bg-transparent text-[#9890ad] border-white/[0.065] hover:text-white hover:bg-white/[0.04]"
                 }`}
-                title="Canlı Şarkı Sözleri"
               >
                 <MicVocal size={13} />
-                <span className="hidden sm:inline">Sözler</span>
+                <span>Sözler</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => {
-                  const next = !discordEnabled;
-                  setDiscordEnabled(next);
-                  showToast(
-                    next
-                      ? "Discord Rich Presence aktif edildi"
-                      : "Discord Rich Presence kapatıldı"
-                  );
-                }}
-                className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all ${
-                  discordEnabled
-                    ? "bg-purple-500/15 text-purple-200 border-purple-400/35"
-                    : "bg-white/[0.04] text-purple-300/40 border-white/10"
-                }`}
-                title="Discord Rich Presence Durumu"
+                onClick={() => handleToggleFullscreenMode(false)}
+                className="h-8 px-3 rounded-[9px] border border-white/[0.065] bg-transparent text-[#9890ad] hover:text-white hover:bg-white/[0.04] hover:border-[#a78bfa]/35 text-xs font-medium inline-flex items-center gap-1.5 transition-all"
+                title="Tam Ekran Modu (F11)"
               >
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    discordEnabled && discordConnected
-                      ? "bg-fuchsia-400 animate-pulse"
-                      : discordEnabled
-                      ? "bg-purple-400"
-                      : "bg-slate-600"
-                  }`}
-                />
-                <span className="hidden md:inline">Discord</span>
+                <Maximize2 size={13} />
+                <span>Tam Ekran</span>
               </button>
 
-              <button
-                type="button"
-                onClick={handleCheckOrInstallUpdate}
-                disabled={isCheckingUpdate || isInstallingUpdate}
-                className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all ${
-                  updateInfo?.has_update
-                    ? "bg-fuchsia-500/25 text-fuchsia-200 border-fuchsia-400/50 animate-pulse"
-                    : "bg-white/[0.04] text-purple-200/80 hover:text-white border-white/10"
-                }`}
-                title="GitHub Güncelleme Kontrolü"
-              >
-                {isCheckingUpdate || isInstallingUpdate ? (
-                  <Loader2 size={11} className="animate-spin text-purple-400" />
-                ) : (
-                  <Zap size={11} className="text-purple-400" />
-                )}
-                <span className="hidden xl:inline">
-                  {isInstallingUpdate
-                    ? "Güncelleniyor..."
-                    : updateInfo?.has_update
-                    ? `v${updateInfo.latest_version}`
-                    : `v${updateInfo?.current_version || "2.1.0"}`}
-                </span>
-              </button>
-
-              {/* Profil Rozeti */}
-              <div className="hidden sm:flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-400/20">
-                <img
-                  src="/mihon-logo.jpg"
-                  alt="Mihon"
-                  className="w-5 h-5 rounded-full object-cover border border-purple-400/50"
-                />
-                <span className="text-xs font-medium text-purple-100">Mihon</span>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsRightSidebarOpen((v) => !v)}
-                className={`w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${
-                  isRightSidebarOpen
-                    ? "bg-white/[0.05] text-purple-200 border-white/10 hover:bg-purple-500/15"
-                    : "bg-purple-500/25 text-purple-200 border-purple-400/40"
-                }`}
-                title={isRightSidebarOpen ? "Now Playing Panelini Gizle" : "Now Playing Panelini Aç"}
-              >
-                {isRightSidebarOpen ? (
-                  <PanelRightClose size={13} />
-                ) : (
-                  <PanelRightOpen size={13} />
-                )}
-              </button>
-
-              <div className="flex items-center gap-0.5 pl-1 border-l border-purple-400/15">
+              <div className="flex items-center gap-0.5 pl-2 ml-1 border-l border-white/[0.065]">
                 <button
                   onClick={() => tauriInvoke("minimize_window").catch(() => {})}
-                  className="w-7 h-7 rounded-lg hover:bg-purple-500/15 flex items-center justify-center text-purple-300/70 hover:text-white transition-colors"
+                  className="w-7 h-7 rounded-md hover:bg-white/[0.06] flex items-center justify-center text-[#9890ad] hover:text-white transition-colors"
                   title="Küçült"
                 >
                   <Minus size={13} />
                 </button>
                 <button
                   onClick={() => tauriInvoke("toggle_maximize").catch(() => {})}
-                  className="w-7 h-7 rounded-lg hover:bg-purple-500/15 flex items-center justify-center text-purple-300/70 hover:text-white transition-colors"
-                  title="Pencereyi Büyüt"
+                  className="w-7 h-7 rounded-md hover:bg-white/[0.06] flex items-center justify-center text-[#9890ad] hover:text-white transition-colors"
+                  title="Büyüt"
                 >
                   <Square size={11} />
                 </button>
                 <button
                   onClick={() => tauriInvoke("close_window").catch(() => {})}
-                  className="w-7 h-7 rounded-lg hover:bg-rose-600 flex items-center justify-center text-purple-300/70 hover:text-white transition-colors"
+                  className="w-7 h-7 rounded-md hover:bg-rose-600/80 flex items-center justify-center text-[#9890ad] hover:text-white transition-colors"
                   title="Kapat"
                 >
                   <X size={14} />
@@ -2315,514 +2220,433 @@ export default function HeliosApp() {
             </div>
           </header>
 
-          {/* ORTA İÇERİK + SAĞ NOW PLAYING PANELİ */}
-          <div className="flex-1 flex min-h-0 overflow-hidden">
-            {/* ===== ORTA ANA SAHNE ===== */}
-            <main
-              ref={mainScrollRef}
-              className="flex-1 overflow-y-auto px-6 py-5 space-y-6"
-            >
-              {/* SANATÇI ÖZEL SAYFASI */}
-              {activeView === "artist" && (
-                <section className="relative overflow-hidden rounded-2xl border border-purple-400/30 bg-gradient-to-br from-[#231145] via-[#150b2b] to-[#2c124d] p-6 shadow-2xl">
-                  <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-                    <div className="flex items-center gap-4">
-                      <TrackArtwork
-                        track={artistTracks[0]}
-                        className="w-20 h-20 rounded-2xl shadow-[0_0_30px_rgba(168,85,247,0.35)] border border-purple-400/50"
-                        iconSize={32}
-                      />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-widest bg-purple-500/25 text-purple-200 border border-purple-400/40">
-                            FEATURED ARTIST
-                          </span>
+          {/* Kaydırılabilir İçerik */}
+          <div
+            ref={mainScrollRef}
+            className="flex-1 overflow-y-auto px-8 pt-2 pb-8 space-y-7"
+          >
+            {/* SANATÇI SAYFASI */}
+            {activeView === "artist" && (
+              <section className="rounded-[20px] p-6 bg-[#140f22] border border-white/[0.065] flex items-center justify-between gap-5">
+                <div className="flex items-center gap-4">
+                  <TrackArtwork
+                    track={artistTracks[0]}
+                    className="w-16 h-16 rounded-2xl"
+                    iconSize={26}
+                  />
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#a78bfa]">
+                        Sanatçı
+                      </span>
+                      <button
+                        onClick={() => setActiveView("home")}
+                        className="text-xs text-[#9890ad] hover:text-white"
+                      >
+                        ← Geri
+                      </button>
+                    </div>
+                    <h1 className="text-2xl font-bold tracking-tight text-white mt-0.5">
+                      {selectedArtistName}
+                    </h1>
+                    <p className="text-xs text-[#9890ad] mt-0.5">
+                      {isLoadingArtist
+                        ? "Parçalar yükleniyor..."
+                        : `${artistTracks.length} popüler parça`}
+                    </p>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* AI KEŞİF SAYFASI */}
+            {activeView === "recommendations" && (
+              <section className="rounded-[20px] p-6 bg-gradient-to-br from-[#18112b] via-[#110d1b] to-[#1d1433] border border-white/[0.065] flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-4 min-w-0 flex-1">
+                  <TrackArtwork
+                    track={recommendationMeta?.seedTrack || recommendedTracks[0]}
+                    className="w-14 h-14 rounded-xl shrink-0"
+                    iconSize={22}
+                  />
+                  <div className="min-w-0">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#a78bfa]">
+                      Akıllı AI Radyo • {recommendationMeta?.detected_genre || "Benzer Akış"}
+                    </span>
+                    <h1 className="text-xl font-bold text-white truncate mt-0.5">
+                      “{recommendationMeta?.seed_title || "Seçili Parça"}” Benzerleri
+                    </h1>
+                  </div>
+                </div>
+
+                {recommendedTracks.length > 0 && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={async () => {
+                        const seed =
+                          currentTrack ||
+                          recommendedTracks[recommendedTracks.length - 1] ||
+                          recommendationMeta?.seedTrack;
+                        if (!seed) return;
+                        showToast("Yeni benzer parçalar ekleniyor...");
+                        await extendQueueWithSimilar(seed, recommendedTracks);
+                      }}
+                      className="h-9 px-4 rounded-full bg-[#f6f4fb] hover:bg-[#e9d5ff] text-[#09070f] text-xs font-semibold inline-flex items-center gap-1.5 transition-colors"
+                    >
+                      <Sparkles size={13} />
+                      <span>+ Daha Fazla</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        const plName = `${
+                          recommendationMeta?.seed_title || "Benzerler"
+                        } Radyo`;
+                        const created = {
+                          id: `rec_pl_${Date.now()}`,
+                          name: plName,
+                          cover: getTrackCover(recommendedTracks[0]),
+                          tracks: recommendedTracks,
+                          createdAt: Date.now(),
+                        };
+                        saveCustomPlaylists([created, ...customPlaylists]);
+                        showToast(`“${plName}” kaydedildi`);
+                      }}
+                      className="h-9 px-4 rounded-full border border-white/[0.08] bg-white/[0.04] hover:bg-[#a78bfa]/15 text-xs font-medium text-white inline-flex items-center gap-1.5 transition-colors"
+                    >
+                      <FolderPlus size={13} />
+                      <span>Kaydet</span>
+                    </button>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* DETAYLI ÇALMA LİSTESİ BAŞLIĞI (Playlist Detail) */}
+            {activeView === "playlist-detail" && activePlaylistObj && (
+              <section className="rounded-[20px] p-6 bg-gradient-to-br from-[#18112b] via-[#110d1b] to-[#150e26] border border-white/[0.065] space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+                  <div className="flex items-center gap-5 min-w-0">
+                    <TrackArtwork
+                      track={
+                        activePlaylistObj.cover
+                          ? {
+                              thumbnail: activePlaylistObj.cover,
+                              title: activePlaylistObj.name,
+                            }
+                          : activePlaylistObj.tracks[0]
+                      }
+                      className="w-32 h-32 sm:w-36 sm:h-36 rounded-2xl shadow-2xl shrink-0"
+                      iconSize={44}
+                    />
+                    <div className="min-w-0 space-y-1.5">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#a78bfa]">
+                          {activePlaylistObj.source === "spotify"
+                            ? "Spotify Listesi"
+                            : "Çalma Listesi"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPlaylistFilter("");
+                            setHasSearched(false);
+                            setActiveView("home");
+                          }}
+                          className="text-xs text-[#9890ad] hover:text-white transition-colors"
+                        >
+                          ← Listelerime Dön
+                        </button>
+                      </div>
+                      <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white truncate">
+                        {activePlaylistObj.name}
+                      </h1>
+                      <p className="text-xs text-[#9890ad]">
+                        {activePlaylistObj.tracks.length} şarkı •{" "}
+                        {playlistTotalDurationLabel}
+                      </p>
+
+                      <div className="flex items-center flex-wrap gap-2 pt-2">
+                        <button
+                          type="button"
+                          disabled={activePlaylistObj.tracks.length === 0}
+                          onClick={() =>
+                            activePlaylistObj.tracks.length > 0 &&
+                            playTrackAtIndex(activePlaylistObj.tracks, 0)
+                          }
+                          className="h-9 px-5 rounded-full bg-[#f6f4fb] hover:bg-[#e9d5ff] disabled:opacity-40 text-[#09070f] text-xs font-semibold inline-flex items-center gap-2 transition-colors"
+                        >
+                          <Play size={14} className="fill-current" />
+                          <span>Tümünü Çal</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={activePlaylistObj.tracks.length === 0}
+                          onClick={() => {
+                            if (!activePlaylistObj.tracks.length) return;
+                            setShuffle(true);
+                            const rand = Math.floor(
+                              Math.random() * activePlaylistObj.tracks.length
+                            );
+                            playTrackAtIndex(activePlaylistObj.tracks, rand);
+                          }}
+                          className="h-9 px-4 rounded-full border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] disabled:opacity-40 text-xs font-medium text-white inline-flex items-center gap-1.5 transition-colors"
+                        >
+                          <Shuffle size={13} />
+                          <span>Karıştır</span>
+                        </button>
+
+                        {activePlaylistObj.tracks[0] && (
                           <button
-                            onClick={() => setActiveView("home")}
-                            className="text-xs font-semibold text-purple-300/80 hover:text-purple-200 underline"
+                            type="button"
+                            onClick={(e) =>
+                              openSimilarRecommendations(
+                                activePlaylistObj.tracks[0],
+                                e
+                              )
+                            }
+                            className="h-9 px-4 rounded-full border border-white/[0.08] bg-white/[0.04] hover:bg-[#a78bfa]/15 hover:border-[#a78bfa]/35 text-xs font-medium text-[#e9d5ff] inline-flex items-center gap-1.5 transition-colors"
                           >
-                            ← Ana Sayfaya Dön
+                            <Sparkles size={13} />
+                            <span>AI Benzerleri</span>
                           </button>
-                        </div>
-                        <h1 className="text-3xl font-black tracking-wide uppercase text-white mt-1">
-                          {selectedArtistName}
-                        </h1>
-                        <p className="text-xs text-purple-200/80 mt-0.5">
-                          {isLoadingArtist
-                            ? "Sanatçının popüler parçaları yükleniyor..."
-                            : `${artistTracks.length} popüler parça • Anında çalmaya hazır`}
-                        </p>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={(e) =>
+                            handleDeletePlaylist(activePlaylistObj.id, e)
+                          }
+                          className="h-9 px-3.5 rounded-full border border-white/[0.065] hover:border-rose-500/40 hover:bg-rose-500/10 text-xs font-medium text-[#9890ad] hover:text-rose-300 inline-flex items-center gap-1.5 transition-colors"
+                          title="Listeyi Sil"
+                        >
+                          <Trash2 size={13} />
+                          <span>Sil</span>
+                        </button>
                       </div>
                     </div>
                   </div>
-                </section>
-              )}
 
-              {/* AI ÖNERİ SAYFASI */}
-              {activeView === "recommendations" && (
-                <section className="relative overflow-hidden rounded-2xl border border-purple-400/30 bg-gradient-to-r from-[#231145] via-[#180d33] to-[#311354] px-5 py-4 shadow-xl">
-                  <div className="relative z-10 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                      <TrackArtwork
-                        track={recommendationMeta?.seedTrack || recommendedTracks[0]}
-                        className="w-14 h-14 rounded-xl shadow-lg border border-purple-400/45 shrink-0"
-                        iconSize={24}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider bg-purple-500/25 text-purple-200 border border-purple-400/40 shrink-0">
-                            AI DISCOVERY RADIO
-                          </span>
-                          <span className="text-xs font-semibold text-fuchsia-300 truncate">
-                            {recommendationMeta?.detected_genre}
-                          </span>
-                        </div>
-                        <h1 className="text-lg font-extrabold tracking-tight text-white truncate mt-1">
-                          “{recommendationMeta?.seed_title || "Seçili Şarkı"}” Benzerleri
-                        </h1>
-                        <p className="text-xs text-purple-200/70 truncate">
-                          {recommendationMeta?.algorithm_summary}
-                        </p>
-                      </div>
-                    </div>
-
-                    {recommendedTracks.length > 0 && (
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          onClick={async () => {
-                            const seed =
-                              currentTrack ||
-                              recommendedTracks[recommendedTracks.length - 1] ||
-                              recommendationMeta?.seedTrack;
-                            if (!seed) return;
-                            showToast("Yeni benzer şarkılar ekleniyor...");
-                            await extendQueueWithSimilar(seed, recommendedTracks);
-                          }}
-                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white text-xs font-extrabold shadow-lg shadow-purple-500/30 transition-all whitespace-nowrap"
-                        >
-                          <Sparkles size={14} />
-                          <span>+ Daha Fazla Ekle</span>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            const plName = `${
-                              recommendationMeta?.seed_title || "Benzerler"
-                            } Radyo`;
-                            const created = {
-                              id: `rec_pl_${Date.now()}`,
-                              name: plName,
-                              cover: getTrackCover(recommendedTracks[0]),
-                              tracks: recommendedTracks,
-                              createdAt: Date.now(),
-                            };
-                            saveCustomPlaylists([created, ...customPlaylists]);
-                            showToast(`“${plName}” çalma listelerine kaydedildi!`);
-                          }}
-                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-purple-500/15 hover:bg-purple-500/25 text-white text-xs font-bold border border-purple-400/25 transition-all whitespace-nowrap"
-                        >
-                          <FolderPlus size={14} className="text-purple-300" />
-                          <span>Listeye Kaydet</span>
-                        </button>
-                      </div>
+                  {/* Liste İçi Hızlı Arama */}
+                  <div className="flex items-center gap-2 w-full sm:w-60 h-9 px-3 rounded-[10px] bg-white/[0.04] border border-white/[0.07] focus-within:border-[#a78bfa]/40">
+                    <Search size={13} className="text-[#9890ad] shrink-0" />
+                    <input
+                      type="text"
+                      value={playlistFilter}
+                      onChange={(e) => setPlaylistFilter(e.target.value)}
+                      placeholder="Bu listede ara..."
+                      className="w-full bg-transparent text-xs text-white placeholder:text-[#5e5773] focus:outline-none"
+                    />
+                    {playlistFilter && (
+                      <button
+                        type="button"
+                        onClick={() => setPlaylistFilter("")}
+                        className="text-[#9890ad] hover:text-white"
+                      >
+                        <X size={12} />
+                      </button>
                     )}
                   </div>
-                </section>
-              )}
+                </div>
+              </section>
+            )}
 
-              {/* ===== HOME: SYNTHESIA AI DISCOVERY + EXPLORE NEW GENRES + FEATURED ARTISTS ===== */}
-              {activeView === "home" && (
-                <>
-                  {/* 1. AI DISCOVERY HERO CARD (Kozmik Mor/Fuchsia Halka Kartı) */}
-                  <section>
-                    <h2 className="text-lg font-medium uppercase tracking-[0.14em] text-white mb-3">
-                      AI DISCOVERY
-                    </h2>
+            {/* ANA SAYFA: DOĞRUDAN KULLANICININ KENDİ LİSTELERİ (Boş listeler gizli) */}
+            {activeView === "home" && !hasSearched && (
+              <section className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h1 className="text-xl font-bold tracking-tight text-white">
+                      Listelerim
+                    </h1>
+                    <p className="text-xs text-[#5e5773] mt-0.5">
+                      {nonEmptyPlaylists.length} çalma listesi
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setIsSpotifyModalOpen(true)}
+                      className="h-8 px-3.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-xs font-medium inline-flex items-center gap-1.5 transition-colors"
+                    >
+                      <Disc3 size={13} />
+                      <span>Spotify Aktar</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setTrackForPlaylistModal(null);
+                        setNewPlaylistName("");
+                        setIsCreateModalOpen(true);
+                      }}
+                      className="h-8 px-3.5 rounded-full bg-[#f6f4fb] hover:bg-[#e9d5ff] text-[#09070f] text-xs font-semibold inline-flex items-center gap-1.5 transition-colors"
+                    >
+                      <Plus size={13} />
+                      <span>Yeni Liste</span>
+                    </button>
+                  </div>
+                </div>
 
-                    <div className="relative overflow-hidden rounded-2xl border border-purple-400/35 bg-gradient-to-r from-[#170d30] via-[#221247] to-[#32155c] p-4 sm:p-5 shadow-[0_16px_45px_rgba(0,0,0,0.55)]">
-                      {/* Sağ Mor/Fuchsia Aurora Işık Dalgaları */}
+                {nonEmptyPlaylists.length === 0 ? (
+                  <div className="py-12 text-center rounded-2xl border border-dashed border-white/10">
+                    <ListMusic size={30} className="mx-auto text-[#5e5773] mb-2" />
+                    <p className="text-sm text-[#9890ad]">
+                      Henüz dolu bir çalma listen yok. Spotify&apos;dan aktarabilir veya yeni liste oluşturabilirsin.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {nonEmptyPlaylists.map((pl) => (
                       <div
-                        className="pointer-events-none absolute -right-10 -bottom-12 w-80 h-56 rounded-full blur-2xl opacity-80"
-                        style={{
-                          background:
-                            "radial-gradient(circle at 70% 70%, #e879f9 0%, #a855f7 42%, #6366f1 75%, transparent 100%)",
+                        key={pl.id}
+                        onClick={() => {
+                          setPlaylistFilter("");
+                          setSelectedPlaylistId(pl.id);
+                          setActiveView("playlist-detail");
                         }}
-                      />
-
-                      <div className="relative z-10 flex flex-col sm:flex-row items-center gap-5">
-                        {/* Sol: Kozmik Mor Neon Halkalı Kapak Görseli */}
-                        <div
-                          onClick={() => {
-                            setActiveCollection(activeSlide);
-                            performSearch(
-                              activeSlide.query,
-                              activeSlide.title,
-                              activeSlide.subtitle
-                            );
-                          }}
-                          className="relative w-36 h-36 sm:w-40 sm:h-40 rounded-xl overflow-hidden bg-[#0c061a] border border-purple-300/25 shrink-0 cursor-pointer group shadow-[0_0_35px_rgba(168,85,247,0.35)]"
-                        >
-                          <img
-                            src={
-                              currentTrack
-                                ? getTrackCover(currentTrack) || activeSlide.cover
-                                : activeSlide.cover
+                        className="group p-3.5 rounded-2xl bg-[#110d1b] hover:bg-[#171224] border border-white/[0.065] hover:border-[#a78bfa]/30 cursor-pointer transition-all"
+                      >
+                        <div className="relative aspect-square mb-3">
+                          <TrackArtwork
+                            track={
+                              pl.cover
+                                ? { thumbnail: pl.cover, title: pl.name }
+                                : pl.tracks[0]
                             }
-                            alt={activeSlide.title}
-                            referrerPolicy="no-referrer"
-                            className="w-full h-full object-cover opacity-75 group-hover:scale-105 transition-transform duration-500"
+                            className="w-full h-full rounded-xl"
+                            iconSize={32}
                           />
-                          <div className="absolute inset-0 bg-gradient-to-tr from-[#0c061a]/75 via-transparent to-purple-500/25" />
-                          {/* Kozmik Gezegen & Mor/Fuchsia Halka Efekti */}
-                          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                            <div className="w-20 h-20 rounded-full bg-black/55 backdrop-blur-[2px] border border-purple-300/70 shadow-[0_0_25px_rgba(192,132,252,0.8),inset_0_0_18px_rgba(232,121,249,0.7)]" />
-                            <div className="absolute w-32 h-9 rounded-full border border-fuchsia-400/70 -rotate-12 shadow-[0_0_18px_rgba(232,121,249,0.75)]" />
-                          </div>
-                        </div>
-
-                        {/* Sağ: SMART PLAYLIST Başlığı, Dinamik Sanatçı Açıklaması ve Oynat Butonu */}
-                        <div className="flex-1 min-w-0 w-full flex flex-col justify-between">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-purple-200/80">
-                                {activeSlide.badge || "SMART PLAYLIST"}
-                              </span>
-                              <h3 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-[0.08em] text-white mt-1 drop-shadow">
-                                {activeSlide.title}
-                              </h3>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={(e) =>
-                                openSimilarRecommendations(
-                                  currentTrack || displayedTracks[0],
-                                  e
-                                )
-                              }
-                              className="p-2 rounded-lg text-purple-200/80 hover:text-purple-200 hover:bg-purple-500/15 transition-colors"
-                              title="AI Radyo Başlat"
-                            >
-                              <Bookmark size={16} />
-                            </button>
-                          </div>
-
-                          <p className="text-xs sm:text-sm text-purple-100/85 mt-2 leading-relaxed max-w-md">
-                            Son dinlediğin{" "}
-                            <button
-                              type="button"
-                              onClick={(e) => openArtistPage(recentArtistPair[0], e)}
-                              className="font-extrabold text-white hover:text-purple-300 uppercase tracking-wide"
-                            >
-                              {recentArtistPair[0]}
-                            </button>{" "}
-                            ve{" "}
-                            <button
-                              type="button"
-                              onClick={(e) => openArtistPage(recentArtistPair[1], e)}
-                              className="font-extrabold text-white hover:text-purple-300 uppercase tracking-wide"
-                            >
-                              {recentArtistPair[1]}
-                            </button>{" "}
-                            frekanslarına göre AI tarafından hazırlandı.
-                          </p>
-
-                          <div className="flex items-center gap-3 mt-4">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (displayedTracks.length > 0) {
-                                  playTrackAtIndex(displayedTracks, 0);
-                                } else {
-                                  performSearch(
-                                    activeSlide.query,
-                                    activeSlide.title,
-                                    activeSlide.subtitle
-                                  );
-                                }
-                              }}
-                              className="w-10 h-10 rounded-full bg-gradient-to-br from-white via-purple-200 to-fuchsia-300 hover:scale-105 active:scale-95 text-[#120726] flex items-center justify-center shadow-[0_0_24px_rgba(192,132,252,0.85)] transition-all"
-                              title="Akıllı Listeyi Oynat"
-                            >
-                              <Play size={17} className="fill-current ml-0.5" />
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={(e) =>
-                                openSimilarRecommendations(
-                                  currentTrack || displayedTracks[0],
-                                  e
-                                )
-                              }
-                              className="px-3.5 py-1.5 rounded-full text-[11px] font-bold bg-purple-500/20 hover:bg-purple-500/30 text-white border border-purple-300/25 backdrop-blur-md flex items-center gap-1.5 transition-all"
-                            >
-                              <Sparkles size={13} className="text-fuchsia-300" />
-                              <span>AI Benzerlerini Üret</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Kart Altı Carousel Noktaları (`━ • • •`) */}
-                    <div className="flex items-center justify-center gap-2 mt-3">
-                      {COLLECTIONS.map((col, i) => {
-                        const isActiveDot = i === discoveryIdx % COLLECTIONS.length;
-                        return (
                           <button
-                            key={col.id}
-                            type="button"
-                            onClick={() => {
-                              setDiscoveryIdx(i);
-                              setActiveCollection(col);
-                              performSearch(col.query, col.title, col.subtitle);
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (pl.tracks.length > 0)
+                                playTrackAtIndex(pl.tracks, 0);
                             }}
-                            className={`h-1.5 rounded-full transition-all ${
-                              isActiveDot
-                                ? "w-6 bg-purple-300 shadow-[0_0_10px_rgba(192,132,252,0.9)]"
-                                : "w-1.5 bg-purple-900 hover:bg-purple-500"
-                            }`}
-                            title={col.subtitle}
-                          />
-                        );
-                      })}
-                    </div>
-                  </section>
-
-                  {/* 2. EXPLORE NEW GENRES */}
-                  <section>
-                    <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-purple-100 mb-3">
-                      EXPLORE NEW GENRES
-                    </h3>
-                    <div className="flex items-center gap-2.5 overflow-x-auto pb-1 no-scrollbar">
-                      {GENRE_PILLS.map((genre) => (
-                        <button
-                          key={genre.id}
-                          type="button"
-                          onClick={() =>
-                            performSearch(
-                              genre.query,
-                              genre.label,
-                              `${genre.label} seçkisi`
-                            )
-                          }
-                          className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all whitespace-nowrap ${genre.style}`}
-                        >
-                          {genre.label}
-                        </button>
-                      ))}
-                    </div>
-                  </section>
-
-                  {/* 3. FEATURED ARTISTS (2x2 Yatay Sanatçı Kartları - Mor Tema) */}
-                  <section>
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-purple-100">
-                        FEATURED ARTISTS
-                      </h3>
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setArtistPageIdx((p) => (p === 0 ? 1 : 0))
-                          }
-                          className="w-6 h-6 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-400/15 flex items-center justify-center text-purple-200/70 hover:text-white transition-colors"
-                          title="Önceki Sanatçılar"
-                        >
-                          <ChevronLeft size={13} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setArtistPageIdx((p) => (p === 0 ? 1 : 0))
-                          }
-                          className="w-6 h-6 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-400/15 flex items-center justify-center text-purple-200/70 hover:text-white transition-colors"
-                          title="Sonraki Sanatçılar"
-                        >
-                          <ChevronRight size={13} />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {visibleFeaturedArtists.map((art) => (
-                        <div
-                          key={art.name}
-                          onClick={(e) => openArtistPage(art.name, e)}
-                          className="group flex items-center justify-between p-3 rounded-2xl bg-[#170d30]/85 hover:bg-[#221345] border border-purple-400/15 hover:border-purple-400/45 cursor-pointer transition-all shadow-lg"
-                        >
-                          <div className="flex items-center gap-3.5 min-w-0">
-                            <img
-                              src={art.avatar}
-                              alt={art.name}
-                              referrerPolicy="no-referrer"
-                              className="w-12 h-12 rounded-xl object-cover border border-purple-300/20 shrink-0"
-                            />
-                            <div className="min-w-0">
-                              <p className="text-sm font-bold uppercase tracking-wider text-white truncate">
-                                {art.name}
-                              </p>
-                              <p className="text-[11px] font-medium uppercase tracking-widest text-purple-300/70 truncate mt-0.5">
-                                {art.sub}
-                              </p>
-                            </div>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={(e) => openArtistPage(art.name, e)}
-                            className="w-8 h-8 rounded-full bg-purple-500/20 group-hover:bg-purple-400 text-purple-100 group-hover:text-[#120726] flex items-center justify-center transition-all shrink-0 shadow"
+                            className="absolute right-2.5 bottom-2.5 w-9 h-9 rounded-full bg-[#f6f4fb] text-[#09070f] flex items-center justify-center shadow-lg opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all"
+                            title="Listeyi Çal"
                           >
-                            <Play size={14} className="fill-current ml-0.5" />
+                            <Play size={15} className="fill-current ml-0.5" />
                           </button>
                         </div>
-                      ))}
-                    </div>
-                  </section>
-                </>
-              )}
-
-              {/* ÇALMA LİSTELERİM GÖRÜNÜMÜ */}
-              {activeView === "playlists" && (
-                <section className="space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-purple-300">
-                        LIBRARY
-                      </span>
-                      <h1 className="text-2xl font-extrabold text-white">
-                        Çalma Listelerim
-                      </h1>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setIsSpotifyModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#1DB954] hover:bg-[#1ED760] text-black text-xs font-extrabold shadow-lg shadow-emerald-500/20 transition-all"
-                      >
-                        <Disc3 size={15} />
-                        <span>Spotify&apos;dan Aktar</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setTrackForPlaylistModal(null);
-                          setNewPlaylistName("");
-                          setIsCreateModalOpen(true);
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white text-xs font-extrabold shadow-lg shadow-purple-500/30 transition-all"
-                      >
-                        <Plus size={15} />
-                        <span>Yeni Liste Oluştur</span>
-                      </button>
-                    </div>
+                        <p className="text-sm font-semibold text-white truncate">
+                          {pl.name}
+                        </p>
+                        <p className="text-xs text-[#5e5773] mt-0.5">
+                          {pl.tracks.length} şarkı
+                        </p>
+                      </div>
+                    ))}
                   </div>
+                )}
+              </section>
+            )}
 
-                  {customPlaylists.length === 0 ? (
-                    <div className="py-16 text-center rounded-2xl bg-purple-500/[0.04] border border-dashed border-purple-400/20">
-                      <ListMusic size={40} className="mx-auto text-purple-400 mb-3" />
-                      <h3 className="text-base font-bold text-white">
-                        Henüz hiç çalma listen yok
-                      </h3>
-                      <p className="text-xs text-purple-200/70 mt-1 mb-4">
-                        Yeni bir liste oluşturup beğendiğin şarkıları içine atabilirsin.
-                      </p>
-                      <button
-                        onClick={() => setIsCreateModalOpen(true)}
-                        className="px-5 py-2.5 rounded-full bg-purple-500 text-white text-xs font-extrabold"
-                      >
-                        + İlk Listeni Oluştur
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                      {customPlaylists.map((pl) => (
-                        <div
-                          key={pl.id}
-                          onClick={() => {
-                            setSelectedPlaylistId(pl.id);
-                            setActiveView("playlist-detail");
-                          }}
-                          className="group p-4 rounded-2xl bg-[#170d30]/80 hover:bg-[#221345] border border-purple-400/15 hover:border-purple-400/45 cursor-pointer transition-all"
-                        >
-                          <div className="relative aspect-square mb-3">
-                            <TrackArtwork
-                              track={
-                                pl.cover
-                                  ? { thumbnail: pl.cover, title: pl.name }
-                                  : pl.tracks[0]
-                              }
-                              className="w-full h-full rounded-xl"
-                              iconSize={36}
-                            />
-                            {pl.source === "spotify" && (
-                              <span className="absolute left-2.5 top-2.5 px-2 py-0.5 rounded-full text-[9px] font-extrabold tracking-wider bg-[#1DB954] text-black shadow">
-                                SPOTIFY
-                              </span>
-                            )}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (pl.tracks.length > 0) playTrackAtIndex(pl.tracks, 0);
-                              }}
-                              className="absolute right-2.5 bottom-2.5 w-10 h-10 rounded-full bg-purple-400 text-[#120726] flex items-center justify-center shadow-xl opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all"
-                            >
-                              <Play size={18} className="fill-current ml-0.5" />
-                            </button>
-                          </div>
-                          <h3 className="font-bold text-sm text-white truncate">
-                            {pl.name}
-                          </h3>
-                          <p className="text-xs text-purple-300/60 mt-0.5">
-                            {pl.tracks.length} parça
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </section>
-              )}
-
-              {/* TAM EKRAN SENKRONİZE ŞARKI SÖZLERİ GÖRÜNÜMÜ */}
-              {activeView === "lyrics" && (
-                <section className="relative rounded-3xl overflow-hidden border border-purple-400/25 bg-[#100821]/90 p-6 md:p-10 h-full min-h-[480px] flex flex-col">
-                  {currentTrack && (
-                    <div
-                      className="pointer-events-none absolute inset-0 opacity-20 blur-3xl scale-125"
-                      style={{
-                        backgroundImage: `url(${getTrackCover(currentTrack)})`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
+            {/* ÇALMA LİSTELERİM */}
+            {activeView === "playlists" && (
+              <section className="space-y-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h1 className="text-xl font-bold text-white">Çalma Listelerim</h1>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setIsSpotifyModalOpen(true)}
+                      className="h-9 px-4 rounded-full border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-xs font-semibold inline-flex items-center gap-1.5 transition-colors"
+                    >
+                      <Disc3 size={14} />
+                      <span>Spotify&apos;dan Aktar</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setTrackForPlaylistModal(null);
+                        setNewPlaylistName("");
+                        setIsCreateModalOpen(true);
                       }}
-                    />
-                  )}
-                  <div
-                    ref={mainLyricsContainerRef}
-                    className="relative z-10 flex-1 overflow-y-auto py-16 px-4 md:px-10 space-y-6"
-                  >
+                      className="h-9 px-4 rounded-full bg-[#f6f4fb] hover:bg-[#e9d5ff] text-[#09070f] text-xs font-semibold inline-flex items-center gap-1.5 transition-colors"
+                    >
+                      <Plus size={14} />
+                      <span>Yeni Liste</span>
+                    </button>
+                  </div>
+                </div>
+
+                {customPlaylists.length === 0 ? (
+                  <div className="py-16 text-center rounded-2xl border border-dashed border-white/10">
+                    <ListMusic size={34} className="mx-auto text-[#5e5773] mb-3" />
+                    <p className="text-sm font-medium text-[#9890ad]">
+                      Henüz çalma listen yok
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {customPlaylists.map((pl) => (
+                      <div
+                        key={pl.id}
+                        onClick={() => {
+                          setPlaylistFilter("");
+                          setSelectedPlaylistId(pl.id);
+                          setActiveView("playlist-detail");
+                        }}
+                        className="group p-3.5 rounded-2xl bg-[#110d1b] hover:bg-[#171224] border border-white/[0.065] cursor-pointer transition-all"
+                      >
+                        <div className="relative aspect-square mb-3">
+                          <TrackArtwork
+                            track={
+                              pl.cover
+                                ? { thumbnail: pl.cover, title: pl.name }
+                                : pl.tracks[0]
+                            }
+                            className="w-full h-full rounded-xl"
+                            iconSize={32}
+                          />
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (pl.tracks.length > 0)
+                                playTrackAtIndex(pl.tracks, 0);
+                            }}
+                            className="absolute right-2.5 bottom-2.5 w-9 h-9 rounded-full bg-[#f6f4fb] text-[#09070f] flex items-center justify-center shadow-lg opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all"
+                          >
+                            <Play size={15} className="fill-current ml-0.5" />
+                          </button>
+                        </div>
+                        <p className="text-sm font-semibold text-white truncate">
+                          {pl.name}
+                        </p>
+                        <p className="text-xs text-[#5e5773] mt-0.5">
+                          {pl.tracks.length} parça
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* SADE SENKRONİZE ŞARKI SÖZLERİ (Çerçevesiz, Scrollbar'sız, Ortalanmış) */}
+            {activeView === "lyrics" && (
+              <section className="relative h-full min-h-[460px] flex flex-col">
+                <div
+                  ref={mainLyricsContainerRef}
+                  className="flex-1 overflow-y-auto no-scrollbar py-16 px-4 md:px-10"
+                >
+                  <div className="max-w-3xl mx-auto space-y-6">
                     {!currentTrack ? (
-                      <div className="py-24 text-center text-purple-300/50">
-                        <MicVocal size={36} className="mx-auto text-purple-400/40 mb-3" />
+                      <div className="py-24 text-center text-[#5e5773]">
+                        <MicVocal size={34} className="mx-auto mb-3 opacity-50" />
                         <p className="text-sm font-medium">Şarkı seçilmedi</p>
                       </div>
                     ) : lyricsData.loading ? (
-                      <div className="py-24 text-center text-purple-300 flex flex-col items-center gap-3">
-                        <Loader2 size={28} className="animate-spin text-purple-400" />
+                      <div className="py-24 flex justify-center">
+                        <Loader2 size={26} className="animate-spin text-[#a78bfa]" />
                       </div>
                     ) : lyricsData.synced.length > 0 ? (
                       lyricsData.synced.map((line, i) => {
                         const isActive = i === activeLyricIndex;
-                        const isPassed = i < activeLyricIndex;
                         return (
                           <p
                             key={`${line.time}_${i}`}
                             data-lyric-idx={i}
                             onClick={() => seekToSeconds(line.time)}
-                            className={`cursor-pointer leading-snug tracking-tight transition-colors duration-300 ${
+                            className={`cursor-pointer leading-snug tracking-tight transition-colors duration-200 ${
                               isActive
-                                ? "text-purple-200 text-2xl md:text-3xl font-extrabold drop-shadow-[0_0_14px_rgba(192,132,252,0.55)]"
-                                : isPassed
-                                ? "text-purple-400/35 hover:text-purple-200 text-xl md:text-2xl font-bold"
-                                : "text-purple-300/55 hover:text-purple-100 text-xl md:text-2xl font-bold"
+                                ? "text-white text-2xl md:text-3xl font-bold"
+                                : "text-white/25 hover:text-white/60 text-xl md:text-2xl font-semibold"
                             }`}
                           >
                             {line.text}
@@ -2830,814 +2654,496 @@ export default function HeliosApp() {
                         );
                       })
                     ) : lyricsData.plain ? (
-                      <div className="whitespace-pre-line text-lg md:text-xl leading-relaxed font-bold text-purple-100 max-w-2xl">
+                      <div className="whitespace-pre-line text-lg leading-relaxed font-medium text-[#d4cfe3]">
                         {lyricsData.plain}
                       </div>
                     ) : (
-                      <div className="py-24 text-center text-purple-300/50">
-                        <p className="text-sm font-semibold">
+                      <div className="py-24 text-center text-[#5e5773]">
+                        <p className="text-sm font-medium">
                           {lyricsData.error || "Söz bulunamadı"}
                         </p>
                       </div>
                     )}
                   </div>
-                </section>
-              )}
+                </div>
+              </section>
+            )}
 
-              {/* ŞARKI LİSTESİ TABLOSU (Home, Liked, Recent, Playlist Detail) */}
-              {activeView !== "playlists" && activeView !== "lyrics" && (
-                <section className="space-y-3 pt-1">
-                  {/* Liste Üst Başlığı ve Aksiyonlar */}
-                  <div className="flex flex-wrap items-center justify-between gap-4 pb-2.5 border-b border-purple-400/15">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-purple-300">
-                        {activeView === "artist"
-                          ? "ARTIST DISCOGRAPHY"
-                          : activeView === "recommendations"
-                          ? "AI FREQUENCY MATCH"
-                          : activeView === "liked"
-                          ? "FAVORITES"
-                          : activeView === "recent"
-                          ? "RECENTLY PLAYED"
-                          : activeView === "playlist-detail"
-                          ? "CUSTOM PLAYLIST"
-                          : "TRACKS"}
-                      </span>
-                      <h2 className="text-lg font-extrabold tracking-wide text-white mt-0.5">
-                        {activeView === "artist"
-                          ? `${selectedArtistName} — Popüler Şarkılar`
-                          : activeView === "recommendations"
-                          ? `${recommendationMeta?.detected_genre || "Aynı Türde"} Önerilen Şarkılar`
-                          : activeView === "liked"
-                          ? "Beğenilen Şarkılar"
-                          : activeView === "recent"
-                          ? "Son Çalınan Şarkılar"
-                          : activeView === "playlist-detail"
-                          ? activePlaylistObj?.name || "Çalma Listesi"
-                          : sectionTitle}
-                      </h2>
-                      <p className="text-xs text-purple-200/60">
-                        {activeView === "artist"
-                          ? `${artistTracks.length} şarkı listeleniyor`
-                          : activeView === "recommendations"
-                          ? `${recommendedTracks.length} benzer türde şarkı sıralandı`
-                          : activeView === "liked"
-                          ? `${likedTracks.length} beğenilen şarkı`
-                          : activeView === "recent"
-                          ? `${recentTracks.length} dinlenen şarkı`
-                          : activeView === "playlist-detail"
-                          ? `${activePlaylistObj?.tracks.length || 0} şarkı`
-                          : sectionSub}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        disabled={displayedTracks.length === 0}
-                        onClick={() =>
-                          displayedTracks.length > 0 &&
-                          playTrackAtIndex(displayedTracks, 0)
-                        }
-                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-400 to-fuchsia-400 hover:from-purple-300 hover:to-fuchsia-300 disabled:opacity-40 text-[#120726] text-xs font-extrabold shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all"
-                      >
-                        <Play size={14} className="fill-current" />
-                        <span>Tümünü Çal</span>
-                      </button>
-
-                      <button
-                        disabled={displayedTracks.length === 0}
-                        onClick={() => {
-                          if (!displayedTracks.length) return;
-                          setShuffle(true);
-                          const rand = Math.floor(
-                            Math.random() * displayedTracks.length
-                          );
-                          playTrackAtIndex(displayedTracks, rand);
-                        }}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#190f32] hover:bg-[#231546] disabled:opacity-40 text-purple-100 text-xs font-semibold border border-purple-400/20 transition-all"
-                      >
-                        <Shuffle size={13} />
-                        <span>Karıştır</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Yüklenirken Skeleton Gösterimi */}
-                  {(activeView === "home" && isLoadingTracks) ||
-                  (activeView === "artist" && isLoadingArtist) ||
-                  (activeView === "recommendations" && isLoadingRecs) ? (
-                    <TrackSkeletonList count={8} />
-                  ) : displayedTracks.length === 0 ? (
-                    <div className="py-16 text-center rounded-2xl bg-[#150b2b]/60 border border-purple-400/15">
-                      <Music2 size={36} className="mx-auto text-purple-400/60 mb-2" />
-                      <p className="text-sm font-semibold text-purple-100">
-                        Burada henüz şarkı yok
-                      </p>
-                      <p className="text-xs text-purple-300/60 mt-1">
-                        Arama çubuğunu kullanarak veya tür haplarından şarkı keşfedebilirsin.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      {displayedTracks.map((track, idx) => {
-                        const isCurrent = currentTrack?.id === track.id;
-                        const liked = isTrackLiked(track.id);
-                        return (
-                          <div
-                            key={`${track.id}_${idx}`}
-                            onClick={() => {
-                              if (activeView === "home" || activeView === "recent") {
-                                isRadioModeRef.current = false;
-                                playTrackAtIndex([track], 0);
-                              } else {
-                                isRadioModeRef.current =
-                                  activeView === "recommendations";
-                                playTrackAtIndex(displayedTracks, idx);
-                              }
-                            }}
-                            className={`group flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl cursor-pointer transition-all border ${
-                              isCurrent
-                                ? "bg-purple-500/20 border-purple-400/50 shadow-[0_0_22px_rgba(168,85,247,0.18)]"
-                                : "bg-transparent border-transparent hover:bg-[#190f32]/80 hover:border-purple-400/15"
-                            }`}
-                          >
-                            {/* Sıra No / Ekolayzır / Yükleniyor */}
-                            <div className="w-6 flex items-center justify-center shrink-0">
-                              {isCurrent && isTrackLoading ? (
-                                <Loader2
-                                  size={16}
-                                  className="text-purple-400 animate-spin"
-                                />
-                              ) : isCurrent && isPlaying ? (
-                                <div className="flex items-end gap-0.5 h-3.5">
-                                  <span className="w-0.5 h-full bg-purple-400 eq-bar eq-bar-1" />
-                                  <span className="w-0.5 h-full bg-fuchsia-400 eq-bar eq-bar-2" />
-                                  <span className="w-0.5 h-full bg-purple-400 eq-bar eq-bar-3" />
-                                  <span className="w-0.5 h-full bg-fuchsia-400 eq-bar eq-bar-4" />
-                                </div>
-                              ) : (
-                                <>
-                                  <span
-                                    className={`text-xs font-semibold tabular-nums group-hover:hidden ${
-                                      isCurrent ? "text-purple-300" : "text-purple-300/50"
-                                    }`}
-                                  >
-                                    {idx + 1}
-                                  </span>
-                                  <Play
-                                    size={14}
-                                    className="hidden group-hover:block text-purple-300 fill-current"
-                                  />
-                                </>
-                              )}
-                            </div>
-
-                            {/* Gerçek Albüm Kapağı */}
-                            <TrackArtwork
-                              track={track}
-                              className="w-11 h-11 rounded-xl"
-                            />
-
-                            {/* Başlık & Tıklanabilir Sanatçı İsimleri */}
-                            <div className="flex-1 min-w-0">
-                              <p
-                                className={`text-sm font-bold truncate ${
-                                  isCurrent ? "text-purple-200" : "text-purple-50"
-                                }`}
-                              >
-                                {track.title}
-                              </p>
-                              <div className="flex items-center flex-wrap gap-x-1.5 text-xs text-purple-200/65 truncate mt-0.5">
-                                {splitArtists(track.artist).map(
-                                  (art, aIdx, arr) => (
-                                    <React.Fragment key={`${art}_${aIdx}`}>
-                                      <button
-                                        type="button"
-                                        onClick={(e) => openArtistPage(art, e)}
-                                        className="hover:text-purple-300 hover:underline transition-colors truncate"
-                                        title={`${art} sayfasına git`}
-                                      >
-                                        {art}
-                                      </button>
-                                      {aIdx < arr.length - 1 && (
-                                        <span className="text-purple-400/40">•</span>
-                                      )}
-                                    </React.Fragment>
-                                  )
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Albüm */}
-                            <div className="hidden md:block w-40 text-xs text-purple-300/50 truncate">
-                              {track.album}
-                            </div>
-
-                            {/* Aksiyon Butonları */}
-                            <div
-                              className="flex items-center gap-1"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <button
-                                onClick={(e) =>
-                                  openSimilarRecommendations(track, e)
-                                }
-                                className="p-2 rounded-lg text-purple-300/60 hover:text-purple-200 hover:bg-purple-500/20 transition-colors"
-                                title="Bu Şarkıyla Aynı Türde Öner (AI)"
-                              >
-                                <Sparkles size={15} />
-                              </button>
-
-                              <button
-                                onClick={() => setTrackForPlaylistModal(track)}
-                                className="p-2 rounded-lg text-purple-300/60 hover:text-white hover:bg-purple-500/15 transition-colors"
-                                title="Çalma Listesine Ekle"
-                              >
-                                <ListPlus size={15} />
-                              </button>
-
-                              <button
-                                onClick={(e) => toggleLikeTrack(track, e)}
-                                className={`p-2 rounded-lg transition-colors ${
-                                  liked
-                                    ? "text-fuchsia-400 hover:bg-fuchsia-500/15"
-                                    : "text-purple-300/60 hover:text-white hover:bg-purple-500/15"
-                                }`}
-                                title={liked ? "Beğeniden Çıkar" : "Beğen"}
-                              >
-                                <Heart
-                                  size={15}
-                                  className={liked ? "fill-current" : ""}
-                                />
-                              </button>
-
-                              {activeView === "playlist-detail" &&
-                                activePlaylistObj && (
-                                  <button
-                                    onClick={(e) =>
-                                      handleRemoveTrackFromPlaylist(
-                                        activePlaylistObj.id,
-                                        track.id,
-                                        e
-                                      )
-                                    }
-                                    className="p-2 rounded-lg text-purple-300/60 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                                    title="Bu Listeden Kaldır"
-                                  >
-                                    <Trash2 size={14} />
-                                  </button>
-                                )}
-                            </div>
-
-                            {/* Süre */}
-                            <div className="w-11 text-right text-xs font-medium text-purple-300/50 tabular-nums">
-                              {track.duration || "0:00"}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </section>
-              )}
-            </main>
-
-            {/* ===== 3. SAĞ SÜTUN: SYNTHESIA `NOW PLAYING` ENTEGRE OYNATICI (MOR TEMA) + YÜZEN `LYRICS / UP NEXT` KARTI ===== */}
-            {isRightSidebarOpen && (
-              <aside className="hidden lg:flex relative w-80 xl:w-[345px] shrink-0 bg-[#100821]/80 border-l border-purple-400/10 backdrop-blur-2xl p-5 flex-col justify-between overflow-y-auto overflow-x-hidden">
-                {/* Sağ Üst Başlık: NOW PLAYING */}
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-medium uppercase tracking-[0.14em] text-white">
-                      NOW PLAYING
+            {/* SADE ŞARKI LİSTESİ TABLOSU */}
+            {activeView !== "playlists" &&
+              activeView !== "lyrics" &&
+              !(activeView === "home" && !hasSearched && visibleTrackList.length === 0) && (
+              <section className="space-y-3">
+                <div className="flex items-baseline justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-base font-semibold tracking-tight text-white">
+                      {activeView === "artist"
+                        ? `${selectedArtistName} — Popüler`
+                        : activeView === "recommendations"
+                        ? `${recommendationMeta?.detected_genre || "Benzer"} Parçalar`
+                        : activeView === "liked"
+                        ? "Beğenilen Şarkılar"
+                        : activeView === "recent"
+                        ? "Son Çalınanlar"
+                        : activeView === "playlist-detail"
+                        ? playlistFilter.trim()
+                          ? `Arama Sonuçları (${visibleTrackList.length})`
+                          : "Liste İçeriği"
+                        : hasSearched
+                        ? sectionTitle
+                        : "Son Çalınanlar"}
                     </h2>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => handleToggleFullscreenMode(false)}
-                        className="p-1.5 rounded-lg text-purple-300/80 hover:text-white hover:bg-purple-500/20 transition-colors"
-                        title="Tam Ekran Modu (F11)"
-                      >
-                        <Maximize2 size={15} />
-                      </button>
+                    {activeView === "home" && hasSearched && (
                       <button
                         type="button"
                         onClick={() => {
-                          setShuffle((s) => !s);
-                          showToast(
-                            !shuffle
-                              ? "Karıştırma açıldı"
-                              : "Karıştırma kapatıldı"
-                          );
+                          setSearchQuery("");
+                          setHasSearched(false);
                         }}
-                        className={`p-1.5 rounded-lg transition-colors ${
-                          shuffle
-                            ? "text-purple-300 bg-purple-500/20"
-                            : "text-purple-300/60 hover:text-white"
-                        }`}
-                        title="Karıştır"
+                        className="text-xs text-[#9890ad] hover:text-white"
                       >
-                        <Shuffle size={15} />
+                        ← Listelerime Dön
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsUpNextCardOpen((v) => !v)}
-                        className={`p-1.5 rounded-lg transition-colors ${
-                          isUpNextCardOpen
-                            ? "text-purple-300 bg-purple-500/20"
-                            : "text-purple-300/60 hover:text-white"
-                        }`}
-                        title="Lyrics & Up Next Kartını Aç/Kapat"
-                      >
-                        <MoreHorizontal size={16} />
-                      </button>
-                    </div>
+                    )}
                   </div>
 
-                  {/* Büyük Kare Parlayan Mor Albüm Kapağı + Yüzen LYRICS & UP NEXT Cam Kartı */}
-                  <div className="relative">
-                    {/* Kapak Arkası Mor/Fuchsia Parlama */}
-                    <div className="pointer-events-none absolute -inset-2 rounded-3xl bg-gradient-to-tr from-purple-600/35 via-fuchsia-500/25 to-violet-500/35 blur-xl opacity-85" />
-
-                    <div
-                      onDoubleClick={() => handleToggleFullscreenMode(false)}
-                      className="relative aspect-square w-full rounded-2xl overflow-hidden bg-[#0c061a] border border-purple-400/45 shadow-[0_0_45px_rgba(168,85,247,0.3)] cursor-pointer group"
-                      title="Tam ekran için çift tıkla"
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-[#5e5773]">
+                      {visibleTrackList.length} parça
+                    </span>
+                    <button
+                      disabled={visibleTrackList.length === 0}
+                      onClick={() => {
+                        if (!visibleTrackList.length) return;
+                        setShuffle(true);
+                        const rand = Math.floor(
+                          Math.random() * visibleTrackList.length
+                        );
+                        playTrackAtIndex(visibleTrackList, rand);
+                      }}
+                      className="text-xs font-medium text-[#9890ad] hover:text-white disabled:opacity-40 inline-flex items-center gap-1.5 transition-colors"
                     >
-                      {currentTrack ? (
-                        <>
-                          <TrackArtwork
-                            track={currentTrack}
-                            className="w-full h-full rounded-none border-0"
-                            iconSize={52}
-                          />
-                          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#090514]/85 via-transparent to-black/20" />
-                          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-end p-4 text-center">
-                            <span className="text-[11px] font-semibold uppercase tracking-[0.26em] text-purple-100/90 drop-shadow">
-                              {splitArtists(currentTrack.artist)[0] ||
-                                currentTrack.artist}
-                            </span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleFullscreenMode(false);
-                            }}
-                            className="absolute top-3 right-3 p-2 rounded-xl bg-black/55 hover:bg-purple-600/80 text-purple-100 border border-purple-300/30 opacity-0 group-hover:opacity-100 transition-all backdrop-blur-md"
-                            title="Tam Ekran Moduna Geç (F11)"
-                          >
-                            <Maximize2 size={15} />
-                          </button>
-                        </>
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-purple-300/60 p-6 text-center">
-                          <div className="relative w-28 h-28 rounded-full flex items-center justify-center border border-purple-400/45 shadow-[0_0_35px_rgba(168,85,247,0.35)] mb-3">
-                            <img
-                              src="/mihon-logo.jpg"
-                              alt="Mihon"
-                              className="w-24 h-24 rounded-full object-cover"
-                            />
-                          </div>
-                          <p className="text-sm font-bold tracking-[0.2em] uppercase text-white">
-                            MIHON
-                          </p>
-                          <p className="text-[11px] text-purple-300/60 mt-1">
-                            Bir parçaya tıklayarak başlat
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                      <Shuffle size={12} />
+                      <span>Karıştır</span>
+                    </button>
+                  </div>
+                </div>
 
-                    {/* Sağ-Alt Yüzen `LYRICS` & `UP NEXT` Cam Kartı */}
-                    {isUpNextCardOpen && (
-                      <div className="mt-3 rounded-xl bg-[#170d30]/95 border border-purple-400/20 backdrop-blur-2xl p-3 shadow-[0_12px_32px_rgba(0,0,0,0.65)]">
-                        {/* LYRICS Satırı */}
+                {(activeView === "home" && hasSearched && isLoadingTracks) ||
+                (activeView === "artist" && isLoadingArtist) ||
+                (activeView === "recommendations" && isLoadingRecs) ? (
+                  <TrackSkeletonList count={8} />
+                ) : visibleTrackList.length === 0 ? (
+                  <div className="py-16 text-center rounded-2xl border border-white/[0.05]">
+                    <Music2 size={32} className="mx-auto text-[#5e5773] mb-2" />
+                    <p className="text-sm text-[#9890ad]">
+                      {playlistFilter.trim()
+                        ? "Bu aramayla eşleşen şarkı yok"
+                        : "Burada henüz şarkı yok"}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-0.5">
+                    {visibleTrackList.map((track, idx) => {
+                      const isCurrent = currentTrack?.id === track.id;
+                      const liked = isTrackLiked(track.id);
+                      return (
                         <div
-                          onClick={() =>
-                            setActiveView(
-                              activeView === "lyrics" ? "home" : "lyrics"
-                            )
-                          }
-                          className="flex items-center justify-between pb-2 mb-2 border-b border-purple-400/15 cursor-pointer group"
+                          key={`${track.id}_${idx}`}
+                          onClick={() => {
+                            if (
+                              (activeView === "home" && hasSearched) ||
+                              activeView === "recent"
+                            ) {
+                              isRadioModeRef.current = false;
+                              playTrackAtIndex([track], 0);
+                            } else {
+                              isRadioModeRef.current =
+                                activeView === "recommendations";
+                              playTrackAtIndex(visibleTrackList, idx);
+                            }
+                          }}
+                          className={`group flex items-center gap-3.5 px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
+                            isCurrent
+                              ? "bg-[#a78bfa]/10"
+                              : "hover:bg-white/[0.04]"
+                          }`}
                         >
-                          <div className="min-w-0 flex-1 pr-2">
-                            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-purple-100 group-hover:text-purple-300 transition-colors">
-                              LYRICS
-                            </span>
-                            {activeLyricIndex >= 0 &&
-                              lyricsData.synced[activeLyricIndex] && (
-                                <p className="text-[11px] text-fuchsia-300 font-medium truncate mt-0.5">
-                                  “{lyricsData.synced[activeLyricIndex].text}”
-                                </p>
+                          {/* Sıra / Ekolayzır */}
+                          <div className="w-6 flex items-center justify-center shrink-0">
+                            {isCurrent && isTrackLoading ? (
+                              <Loader2
+                                size={15}
+                                className="text-[#a78bfa] animate-spin"
+                              />
+                            ) : isCurrent && isPlaying ? (
+                              <div className="flex items-end gap-0.5 h-3">
+                                <span className="w-0.5 h-full bg-[#a78bfa] eq-bar eq-bar-1" />
+                                <span className="w-0.5 h-full bg-[#a78bfa] eq-bar eq-bar-2" />
+                                <span className="w-0.5 h-full bg-[#a78bfa] eq-bar eq-bar-3" />
+                              </div>
+                            ) : (
+                              <>
+                                <span
+                                  className={`text-xs tabular-nums group-hover:hidden ${
+                                    isCurrent ? "text-[#a78bfa] font-semibold" : "text-[#5e5773]"
+                                  }`}
+                                >
+                                  {idx + 1}
+                                </span>
+                                <Play
+                                  size={13}
+                                  className="hidden group-hover:block text-white fill-current"
+                                />
+                              </>
+                            )}
+                          </div>
+
+                          <TrackArtwork
+                            track={track}
+                            className="w-10 h-10 rounded-[9px]"
+                          />
+
+                          <div className="flex-1 min-w-0">
+                            <p
+                              className={`text-[13.5px] font-semibold truncate ${
+                                isCurrent ? "text-[#ddd6fe]" : "text-[#f6f4fb]"
+                              }`}
+                            >
+                              {track.title}
+                            </p>
+                            <div className="flex items-center flex-wrap gap-x-1.5 text-xs text-[#9890ad] truncate mt-0.5">
+                              {splitArtists(track.artist).map(
+                                (art, aIdx, arr) => (
+                                  <React.Fragment key={`${art}_${aIdx}`}>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => openArtistPage(art, e)}
+                                      className="hover:text-white transition-colors truncate"
+                                    >
+                                      {art}
+                                    </button>
+                                    {aIdx < arr.length - 1 && (
+                                      <span className="text-[#5e5773]">•</span>
+                                    )}
+                                  </React.Fragment>
+                                )
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="hidden md:block w-44 text-xs text-[#5e5773] truncate">
+                            {track.album}
+                          </div>
+
+                          <div
+                            className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              onClick={(e) =>
+                                openSimilarRecommendations(track, e)
+                              }
+                              className="p-1.5 rounded-md text-[#9890ad] hover:text-[#c4b5fd] hover:bg-white/[0.05]"
+                              title="Benzerlerini Öner (AI)"
+                            >
+                              <Sparkles size={14} />
+                            </button>
+                            <button
+                              onClick={() => setTrackForPlaylistModal(track)}
+                              className="p-1.5 rounded-md text-[#9890ad] hover:text-white hover:bg-white/[0.05]"
+                              title="Listeye Ekle"
+                            >
+                              <ListPlus size={14} />
+                            </button>
+                            <button
+                              onClick={(e) => toggleLikeTrack(track, e)}
+                              className={`p-1.5 rounded-md transition-colors ${
+                                liked
+                                  ? "text-[#a78bfa]"
+                                  : "text-[#9890ad] hover:text-white"
+                              }`}
+                              title={liked ? "Beğeniden Çıkar" : "Beğen"}
+                            >
+                              <Heart
+                                size={14}
+                                className={liked ? "fill-current" : ""}
+                              />
+                            </button>
+                            {activeView === "playlist-detail" &&
+                              activePlaylistObj && (
+                                <button
+                                  onClick={(e) =>
+                                    handleRemoveTrackFromPlaylist(
+                                      activePlaylistObj.id,
+                                      track.id,
+                                      e
+                                    )
+                                  }
+                                  className="p-1.5 rounded-md text-[#9890ad] hover:text-rose-400"
+                                  title="Listeden Kaldır"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
                               )}
                           </div>
-                          <MoreHorizontal
-                            size={14}
-                            className="text-purple-300/60 group-hover:text-purple-200 shrink-0"
-                          />
-                        </div>
 
-                        {/* UP NEXT Bölümü */}
-                        <div>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-purple-200/80">
-                              UP NEXT
-                            </span>
-                            {currentTrack && (
-                              <button
-                                type="button"
-                                onClick={(e) =>
-                                  openSimilarRecommendations(currentTrack, e)
-                                }
-                                className="text-[10px] font-semibold text-purple-300 hover:underline flex items-center gap-1"
-                              >
-                                <Sparkles size={10} />
-                                <span>AI Öner</span>
-                              </button>
-                            )}
-                          </div>
-
-                          <div className="space-y-1.5 max-h-28 overflow-y-auto pr-0.5">
-                            {queue
-                              .slice(queueIndex + 1, queueIndex + 5)
-                              .map((item, i) => (
-                                <div
-                                  key={`${item.id}_${i}`}
-                                  onClick={() =>
-                                    playTrackAtIndex(queue, queueIndex + 1 + i)
-                                  }
-                                  className="flex items-center gap-2.5 p-1 rounded-lg hover:bg-purple-500/15 cursor-pointer transition-colors"
-                                >
-                                  <TrackArtwork
-                                    track={item}
-                                    className="w-7 h-7 rounded-md"
-                                    iconSize={12}
-                                  />
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-[11px] font-semibold text-purple-50 truncate">
-                                      {item.title}
-                                    </p>
-                                    <p className="text-[9px] uppercase tracking-wider text-purple-300/60 truncate">
-                                      {item.artist}
-                                    </p>
-                                  </div>
-                                </div>
-                              ))}
-                            {queue.slice(queueIndex + 1, queueIndex + 5)
-                              .length === 0 && (
-                              <p className="text-[11px] text-purple-300/40 py-1">
-                                Sıradaki parça otomatik seçilecek
-                              </p>
-                            )}
+                          <div className="w-11 text-right text-xs text-[#5e5773] tabular-nums">
+                            {track.duration || "0:00"}
                           </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })}
                   </div>
-                </div>
-
-                {/* Alt Kısım: Şarkı Başlığı, Kalp, Parlayan Mor Seekbar, Oynatma Kontrolleri ve Ses Çubuğu */}
-                <div className="mt-4 space-y-3.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-lg font-bold uppercase tracking-wider text-white truncate">
-                        {currentTrack ? currentTrack.title : "MIHON READY"}
-                      </h3>
-                      {currentTrack ? (
-                        <div className="flex items-center flex-wrap gap-x-1.5 text-xs font-medium uppercase tracking-widest text-purple-300/75 mt-0.5">
-                          {splitArtists(currentTrack.artist).map(
-                            (art, aIdx, arr) => (
-                              <React.Fragment key={`${art}_${aIdx}`}>
-                                <button
-                                  type="button"
-                                  onClick={(e) => openArtistPage(art, e)}
-                                  className="hover:text-purple-200 transition-colors truncate"
-                                >
-                                  {art}
-                                </button>
-                                {aIdx < arr.length - 1 && <span>•</span>}
-                              </React.Fragment>
-                            )
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-xs uppercase tracking-widest text-purple-300/45 mt-0.5">
-                          SELECT A TRACK
-                        </p>
-                      )}
-                    </div>
-
-                    {currentTrack && (
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          onClick={() => setTrackForPlaylistModal(currentTrack)}
-                          className="p-1.5 rounded-lg text-purple-300/70 hover:text-white hover:bg-purple-500/15 transition-colors"
-                          title="Çalma Listesine Ekle"
-                        >
-                          <ListPlus size={16} />
-                        </button>
-                        <button
-                          onClick={(e) => toggleLikeTrack(currentTrack, e)}
-                          className={`p-1.5 rounded-lg transition-colors ${
-                            isTrackLiked(currentTrack.id)
-                              ? "text-fuchsia-400 drop-shadow-[0_0_8px_rgba(232,121,249,0.7)]"
-                              : "text-purple-200/80 hover:text-white"
-                          }`}
-                          title="Beğen"
-                        >
-                          <Heart
-                            size={17}
-                            className={
-                              isTrackLiked(currentTrack.id) ? "fill-current" : ""
-                            }
-                          />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Parlayan Mor İlerleme Çubuğu (Seekbar) */}
-                  <div className="space-y-1">
-                    <input
-                      type="range"
-                      min={0}
-                      max={effectiveDuration || 100}
-                      step={0.1}
-                      value={displayedTime}
-                      disabled={!currentTrack}
-                      onMouseDown={() => setIsSeeking(true)}
-                      onTouchStart={() => setIsSeeking(true)}
-                      onChange={(e) => {
-                        const val = parseFloat(e.target.value);
-                        setSeekPreview(val);
-                        if (!isSeeking) seekToSeconds(val);
-                      }}
-                      onMouseUp={(e) => {
-                        const val = parseFloat(e.currentTarget.value);
-                        setIsSeeking(false);
-                        seekToSeconds(val);
-                      }}
-                      onTouchEnd={(e) => {
-                        const val = parseFloat(e.currentTarget.value);
-                        setIsSeeking(false);
-                        seekToSeconds(val);
-                      }}
-                      style={{ "--progress": `${seekPercent}%` }}
-                      className="helios-slider w-full"
-                    />
-                    <div className="flex items-center justify-between text-[10px] font-medium text-purple-300/65 tabular-nums">
-                      <span>{formatTime(displayedTime)}</span>
-                      <span>{formatTime(effectiveDuration)}</span>
-                    </div>
-                  </div>
-
-                  {/* Ana Oynatma Kontrolleri */}
-                  <div className="flex items-center justify-between px-1">
-                    <button
-                      onClick={() => {
-                        setShuffle((s) => !s);
-                        showToast(
-                          !shuffle
-                            ? "Karıştırma açıldı"
-                            : "Karıştırma kapatıldı"
-                        );
-                      }}
-                      className={`p-2 rounded-lg transition-colors ${
-                        shuffle
-                          ? "text-purple-300 bg-purple-500/20"
-                          : "text-purple-300/60 hover:text-white"
-                      }`}
-                      title="Karıştır"
-                    >
-                      <Shuffle size={16} />
-                    </button>
-
-                    <button
-                      onClick={handlePrev}
-                      className="p-2 rounded-lg text-purple-100 hover:text-purple-300 transition-colors"
-                      title="Önceki Parça"
-                    >
-                      <SkipBack size={20} className="fill-current" />
-                    </button>
-
-                    <button
-                      onClick={togglePlayPause}
-                      className="w-12 h-12 rounded-2xl bg-gradient-to-br from-white via-purple-200 to-fuchsia-400 hover:scale-105 active:scale-95 text-[#120726] flex items-center justify-center shadow-[0_0_28px_rgba(168,85,247,0.75)] transition-all"
-                      title="Oynat / Duraklat (Boşluk)"
-                    >
-                      {isTrackLoading ? (
-                        <Loader2 size={22} className="animate-spin text-[#120726]" />
-                      ) : isPlaying ? (
-                        <Pause size={22} className="fill-current" />
-                      ) : (
-                        <Play size={22} className="fill-current ml-0.5" />
-                      )}
-                    </button>
-
-                    <button
-                      onClick={() => handleNext(true)}
-                      className="p-2 rounded-lg text-purple-100 hover:text-purple-300 transition-colors"
-                      title="Sonraki Parça"
-                    >
-                      <SkipForward size={20} className="fill-current" />
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        const next =
-                          repeatMode === "off"
-                            ? "all"
-                            : repeatMode === "all"
-                            ? "one"
-                            : "off";
-                        setRepeatMode(next);
-                      }}
-                      className={`p-2 rounded-lg transition-colors ${
-                        repeatMode !== "off"
-                          ? "text-purple-300 bg-purple-500/20"
-                          : "text-purple-300/60 hover:text-white"
-                      }`}
-                      title="Tekrarla"
-                    >
-                      {repeatMode === "one" ? (
-                        <Repeat1 size={16} />
-                      ) : (
-                        <Repeat size={16} />
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Alt Ses Kaydırıcısı ve Yardımcı Kontroller (Tam Ekran İkonu Dahil!) */}
-                  <div className="pt-2 border-t border-purple-400/10 flex items-center justify-between gap-2">
-                    <button
-                      onClick={() => setIsMuted((m) => !m)}
-                      className="p-1.5 rounded-lg text-purple-300/70 hover:text-white transition-colors"
-                      title="Sesi Kapat / Aç"
-                    >
-                      {isMuted || volume === 0 ? (
-                        <VolumeX size={16} />
-                      ) : volume < 0.5 ? (
-                        <Volume1 size={16} />
-                      ) : (
-                        <Volume2 size={16} />
-                      )}
-                    </button>
-
-                    <input
-                      type="range"
-                      min={0}
-                      max={1}
-                      step={0.01}
-                      value={isMuted ? 0 : volume}
-                      onChange={(e) => {
-                        const v = parseFloat(e.target.value);
-                        volumeRef.current = v;
-                        mutedRef.current = false;
-                        applyAudioSettings();
-                        setVolume(v);
-                        setIsMuted(false);
-                        localStorage.setItem("volume", JSON.stringify(v));
-                      }}
-                      style={{ "--progress": `${(isMuted ? 0 : volume) * 100}%` }}
-                      className="helios-slider flex-1"
-                    />
-
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        onClick={cyclePlaybackSpeed}
-                        className={`px-2 py-1 rounded-md text-[10px] font-extrabold border transition-all ${
-                          playbackRate !== 1
-                            ? "bg-purple-500/25 text-purple-200 border-purple-400/50"
-                            : "bg-white/[0.04] text-purple-300/70 border-white/10 hover:text-white"
-                        }`}
-                        title="Oynatma Hızı"
-                      >
-                        {playbackRate}x
-                      </button>
-
-                      <button
-                        onClick={() =>
-                          setActiveView(
-                            activeView === "lyrics" ? "home" : "lyrics"
-                          )
-                        }
-                        className={`p-1.5 rounded-md transition-colors ${
-                          activeView === "lyrics"
-                            ? "text-purple-200 bg-purple-500/25"
-                            : "text-purple-300/70 hover:text-white"
-                        }`}
-                        title="Canlı Şarkı Sözleri"
-                      >
-                        <MicVocal size={14} />
-                      </button>
-
-                      <button
-                        onClick={() => handleToggleFullscreenMode(false)}
-                        className="p-1.5 rounded-md text-purple-300/70 hover:text-purple-200 hover:bg-purple-500/20 transition-colors"
-                        title="Tam Ekran Sahne Modu (F11)"
-                      >
-                        <Maximize2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </aside>
+                )}
+              </section>
             )}
           </div>
-
-          {/* Sağ Panel Kapalıyken veya Küçük Ekranda Kompakt Alt Oynatıcı */}
-          {!isRightSidebarOpen && (
-            <footer className="h-20 px-5 bg-[#100821]/95 border-t border-purple-400/15 backdrop-blur-2xl flex items-center justify-between gap-5 shrink-0">
-              <div className="flex items-center gap-3 w-64 min-w-0">
-                <TrackArtwork
-                  track={currentTrack}
-                  className="w-12 h-12 rounded-xl"
-                  iconSize={18}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-bold text-white truncate">
-                    {currentTrack ? currentTrack.title : "Mihon"}
-                  </p>
-                  <p className="text-[11px] text-purple-300/70 truncate">
-                    {currentTrack ? currentTrack.artist : "Parça seçilmedi"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex-1 max-w-xl flex flex-col items-center gap-1.5">
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={handlePrev}
-                    className="p-1.5 text-purple-100 hover:text-purple-300"
-                  >
-                    <SkipBack size={17} className="fill-current" />
-                  </button>
-                  <button
-                    onClick={togglePlayPause}
-                    className="w-9 h-9 rounded-full bg-purple-400 text-[#120726] flex items-center justify-center shadow-[0_0_16px_rgba(168,85,247,0.6)]"
-                  >
-                    {isPlaying ? (
-                      <Pause size={16} className="fill-current" />
-                    ) : (
-                      <Play size={16} className="fill-current ml-0.5" />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => handleNext(true)}
-                    className="p-1.5 text-purple-100 hover:text-purple-300"
-                  >
-                    <SkipForward size={17} className="fill-current" />
-                  </button>
-                </div>
-                <div className="w-full flex items-center gap-2.5">
-                  <span className="text-[10px] text-purple-300/70 tabular-nums">
-                    {formatTime(displayedTime)}
-                  </span>
-                  <input
-                    type="range"
-                    min={0}
-                    max={effectiveDuration || 100}
-                    step={0.1}
-                    value={displayedTime}
-                    disabled={!currentTrack}
-                    onChange={(e) => seekToSeconds(parseFloat(e.target.value))}
-                    style={{ "--progress": `${seekPercent}%` }}
-                    className="helios-slider flex-1"
-                  />
-                  <span className="text-[10px] text-purple-300/70 tabular-nums">
-                    {formatTime(effectiveDuration)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 w-56">
-                <button
-                  onClick={() => handleToggleFullscreenMode(false)}
-                  className="p-2 rounded-lg text-purple-200 bg-purple-500/20 border border-purple-400/40"
-                  title="Tam Ekran Modu (F11)"
-                >
-                  <Maximize2 size={14} />
-                </button>
-                <button
-                  onClick={() => setIsRightSidebarOpen(true)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-500/25 text-purple-200 border border-purple-400/45"
-                >
-                  Now Playing Aç
-                </button>
-              </div>
-            </footer>
-          )}
-        </div>
+        </main>
       </div>
 
-      {/* ===== SİNEMATİK TAM EKRAN SAHNE MODU (F11 / Tam Ekran Butonu) ===== */}
+      {/* ===== MİNİMAL ALT OYNATICI ÇUBUĞU ===== */}
+      <footer className="relative z-20 h-[82px] px-6 bg-[#0e0a17]/95 border-t border-white/[0.065] backdrop-blur-2xl grid grid-cols-3 items-center gap-5 shrink-0">
+        {/* Sol: Çalan Parça */}
+        <div className="flex items-center gap-3.5 min-w-0">
+          <TrackArtwork
+            track={currentTrack}
+            className="w-12 h-12 rounded-[10px]"
+            iconSize={20}
+          />
+          <div className="min-w-0 flex-1">
+            <p className="text-[13.5px] font-semibold text-[#f6f4fb] truncate">
+              {currentTrack ? currentTrack.title : "Mihon"}
+            </p>
+            {currentTrack ? (
+              <div className="flex items-center gap-x-1.5 text-xs text-[#9890ad] truncate mt-0.5">
+                {splitArtists(currentTrack.artist).map((art, aIdx, arr) => (
+                  <React.Fragment key={`${art}_${aIdx}`}>
+                    <button
+                      type="button"
+                      onClick={(e) => openArtistPage(art, e)}
+                      className="hover:text-white transition-colors truncate"
+                    >
+                      {art}
+                    </button>
+                    {aIdx < arr.length - 1 && <span>•</span>}
+                  </React.Fragment>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-[#5e5773] truncate mt-0.5">
+                Bir parça seçin
+              </p>
+            )}
+          </div>
+          {currentTrack && (
+            <div className="flex items-center gap-0.5 shrink-0">
+              <button
+                onClick={(e) => toggleLikeTrack(currentTrack, e)}
+                className={`p-1.5 rounded-lg transition-colors ${
+                  isTrackLiked(currentTrack.id)
+                    ? "text-[#a78bfa]"
+                    : "text-[#9890ad] hover:text-white"
+                }`}
+                title="Beğen"
+              >
+                <Heart
+                  size={16}
+                  className={isTrackLiked(currentTrack.id) ? "fill-current" : ""}
+                />
+              </button>
+              <button
+                onClick={() => setTrackForPlaylistModal(currentTrack)}
+                className="p-1.5 rounded-lg text-[#9890ad] hover:text-white transition-colors"
+                title="Listeye Ekle"
+              >
+                <ListPlus size={16} />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Orta: Kontroller & İnce Seekbar */}
+        <div className="flex flex-col items-center gap-2">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => {
+                setShuffle((s) => !s);
+                showToast(!shuffle ? "Karıştırma açıldı" : "Karıştırma kapatıldı");
+              }}
+              className={`p-1 rounded-md transition-colors ${
+                shuffle ? "text-[#a78bfa]" : "text-[#9890ad] hover:text-white"
+              }`}
+              title="Karıştır"
+            >
+              <Shuffle size={15} />
+            </button>
+
+            <button
+              onClick={handlePrev}
+              className="p-1 text-[#d4cfe3] hover:text-white transition-colors"
+              title="Önceki"
+            >
+              <SkipBack size={18} className="fill-current" />
+            </button>
+
+            <button
+              onClick={togglePlayPause}
+              className="w-9 h-9 rounded-full bg-[#f6f4fb] hover:bg-[#e9d5ff] text-[#09070f] flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
+              title="Oynat / Duraklat"
+            >
+              {isTrackLoading ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : isPlaying ? (
+                <Pause size={16} className="fill-current" />
+              ) : (
+                <Play size={16} className="fill-current ml-0.5" />
+              )}
+            </button>
+
+            <button
+              onClick={() => handleNext(true)}
+              className="p-1 text-[#d4cfe3] hover:text-white transition-colors"
+              title="Sonraki"
+            >
+              <SkipForward size={18} className="fill-current" />
+            </button>
+
+            <button
+              onClick={() => {
+                const next =
+                  repeatMode === "off"
+                    ? "all"
+                    : repeatMode === "all"
+                    ? "one"
+                    : "off";
+                setRepeatMode(next);
+              }}
+              className={`p-1 rounded-md transition-colors ${
+                repeatMode !== "off"
+                  ? "text-[#a78bfa]"
+                  : "text-[#9890ad] hover:text-white"
+              }`}
+              title="Tekrarla"
+            >
+              {repeatMode === "one" ? <Repeat1 size={15} /> : <Repeat size={15} />}
+            </button>
+          </div>
+
+          <div className="w-full max-w-lg flex items-center gap-2.5">
+            <span className="text-[11px] text-[#5e5773] tabular-nums w-8 text-right">
+              {formatTime(displayedTime)}
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={effectiveDuration || 100}
+              step={0.1}
+              value={displayedTime}
+              disabled={!currentTrack}
+              onMouseDown={() => setIsSeeking(true)}
+              onTouchStart={() => setIsSeeking(true)}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                setSeekPreview(val);
+                if (!isSeeking) seekToSeconds(val);
+              }}
+              onMouseUp={(e) => {
+                const val = parseFloat(e.currentTarget.value);
+                setIsSeeking(false);
+                seekToSeconds(val);
+              }}
+              onTouchEnd={(e) => {
+                const val = parseFloat(e.currentTarget.value);
+                setIsSeeking(false);
+                seekToSeconds(val);
+              }}
+              style={{ "--progress": `${seekPercent}%` }}
+              className="helios-slider flex-1"
+            />
+            <span className="text-[11px] text-[#5e5773] tabular-nums w-8">
+              {formatTime(effectiveDuration)}
+            </span>
+          </div>
+        </div>
+
+        {/* Sağ: Hız, Sözler, Ses, Tam Ekran */}
+        <div className="flex items-center justify-end gap-2.5">
+          <button
+            onClick={cyclePlaybackSpeed}
+            className={`text-[11px] font-semibold px-2 py-1 rounded-md border transition-colors ${
+              playbackRate !== 1
+                ? "border-[#a78bfa]/40 bg-[#a78bfa]/15 text-[#e9d5ff]"
+                : "border-white/[0.065] text-[#9890ad] hover:text-white"
+            }`}
+            title="Oynatma Hızı"
+          >
+            {playbackRate}x
+          </button>
+
+          <button
+            onClick={() =>
+              setActiveView(activeView === "lyrics" ? "home" : "lyrics")
+            }
+            className={`p-1.5 rounded-md transition-colors ${
+              activeView === "lyrics"
+                ? "text-[#a78bfa]"
+                : "text-[#9890ad] hover:text-white"
+            }`}
+            title="Şarkı Sözleri"
+          >
+            <MicVocal size={15} />
+          </button>
+
+          <button
+            onClick={() => setIsMuted((m) => !m)}
+            className="p-1 text-[#9890ad] hover:text-white transition-colors"
+            title="Ses"
+          >
+            {isMuted || volume === 0 ? (
+              <VolumeX size={16} />
+            ) : volume < 0.5 ? (
+              <Volume1 size={16} />
+            ) : (
+              <Volume2 size={16} />
+            )}
+          </button>
+
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={isMuted ? 0 : volume}
+            onChange={(e) => {
+              const v = parseFloat(e.target.value);
+              volumeRef.current = v;
+              mutedRef.current = false;
+              applyAudioSettings();
+              setVolume(v);
+              setIsMuted(false);
+              localStorage.setItem("volume", JSON.stringify(v));
+            }}
+            style={{ "--progress": `${(isMuted ? 0 : volume) * 100}%` }}
+            className="helios-slider w-20"
+          />
+
+          <button
+            onClick={() => handleToggleFullscreenMode(false)}
+            className="p-1.5 rounded-md text-[#9890ad] hover:text-white transition-colors"
+            title="Tam Ekran Modu (F11)"
+          >
+            <Maximize2 size={15} />
+          </button>
+        </div>
+      </footer>
+
+      {/* ===== SADE TAM EKRAN SAHNE MODU (F11 / Tam Ekran) ===== */}
       {isFullscreenStage && (
-        <div className="fixed inset-0 z-40 bg-[#070312] flex flex-col justify-between p-6 md:p-10 overflow-hidden select-none">
-          {/* Arka Plan Bulanık Albüm Kapağı & Mor Aurora */}
+        <div className="fixed inset-0 z-40 bg-[#09070f] flex flex-col justify-between px-10 md:px-14 py-9 overflow-hidden select-none">
           {currentTrack && (
             <div
-              className="pointer-events-none absolute inset-0 opacity-30 blur-[90px] scale-125 transition-all duration-700"
+              className="pointer-events-none absolute inset-0 opacity-20 blur-[90px] scale-125"
               style={{
                 backgroundImage: `url(${getTrackCover(currentTrack)})`,
                 backgroundSize: "cover",
@@ -3645,103 +3151,67 @@ export default function HeliosApp() {
               }}
             />
           )}
-          <div
-            className="pointer-events-none absolute inset-0 opacity-60"
-            style={{
-              background:
-                "radial-gradient(circle at 25% 35%, rgba(168,85,247,0.35), transparent 55%), radial-gradient(circle at 80% 70%, rgba(217,70,239,0.28), transparent 55%)",
-            }}
-          />
 
-          {/* Üst Bar: Marka + Tam Ekrandan Çıkış */}
           <div
             data-tauri-drag-region
             className="relative z-10 flex items-center justify-between"
           >
-            <div className="flex items-center gap-3">
-              <img
-                src="/mihon-logo.jpg"
-                alt="Mihon"
-                className="w-8 h-8 rounded-xl object-cover border border-purple-400/50 shadow-[0_0_20px_rgba(168,85,247,0.5)]"
-              />
-              <div>
-                <span className="text-sm font-light tracking-[0.35em] uppercase text-white block">
-                  MIHON
-                </span>
-                <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-purple-300">
-                  IMMERSIVE FULLSCREEN STAGE
-                </span>
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#c4b5fd] to-[#7c3aed] flex items-center justify-center text-[#09070f] font-extrabold text-xs">
+                M
               </div>
+              <span className="text-sm font-bold tracking-[0.12em] uppercase text-white">
+                Mihon
+              </span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleToggleFullscreenMode(false)}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/25 hover:bg-purple-500/40 text-purple-100 border border-purple-400/50 text-xs font-bold shadow-[0_0_20px_rgba(168,85,247,0.35)] transition-all"
-              >
-                <Minimize2 size={14} />
-                <span>Tam Ekrandan Çık (ESC / F11)</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => handleToggleFullscreenMode(false)}
+              className="h-8 px-3.5 rounded-lg border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-medium text-[#d4cfe3] hover:text-white inline-flex items-center gap-1.5 transition-colors"
+            >
+              <Minimize2 size={13} />
+              <span>Tam Ekrandan Çık (ESC)</span>
+            </button>
           </div>
 
-          {/* Orta Sahne: Sol Dev Parlayan Kapak & Sağ Canlı Senkronize Sözler */}
-          <div className="relative z-10 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center min-h-0 my-6">
-            {/* Sol: Dev Albüm Kapağı & Parça Bilgisi */}
-            <div className="lg:col-span-5 flex flex-col items-center lg:items-start justify-center space-y-6">
-              <div className="relative group">
-                <div className="pointer-events-none absolute -inset-4 rounded-[32px] bg-gradient-to-tr from-purple-600/45 via-fuchsia-500/35 to-indigo-500/40 blur-2xl opacity-90" />
-                <div className="relative w-64 h-64 sm:w-80 sm:h-80 xl:w-96 xl:h-96 rounded-3xl overflow-hidden bg-[#100821] border border-purple-300/45 shadow-[0_0_70px_rgba(168,85,247,0.45)]">
-                  <TrackArtwork
-                    track={currentTrack}
-                    className="w-full h-full rounded-none border-0"
-                    iconSize={72}
-                  />
-                </div>
+          <div className="relative z-10 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center max-w-6xl w-full mx-auto min-h-0 my-6">
+            <div className="lg:col-span-5 flex flex-col items-center lg:items-start">
+              <div className="w-64 h-64 sm:w-80 sm:h-80 rounded-[22px] overflow-hidden border border-white/10 shadow-2xl bg-[#110d1b]">
+                <TrackArtwork
+                  track={currentTrack}
+                  className="w-full h-full rounded-none border-0"
+                  iconSize={64}
+                />
               </div>
-
-              <div className="text-center lg:text-left max-w-md w-full">
-                <h1 className="text-2xl sm:text-4xl font-black uppercase tracking-wide text-white truncate drop-shadow">
-                  {currentTrack ? currentTrack.title : "MIHON"}
-                </h1>
-                <p className="text-sm sm:text-base font-semibold uppercase tracking-[0.2em] text-purple-300 mt-1 truncate">
-                  {currentTrack ? currentTrack.artist : "Kozmik Müzik Deneyimi"}
-                </p>
-              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mt-5 truncate max-w-sm">
+                {currentTrack ? currentTrack.title : "Mihon"}
+              </h1>
+              <p className="text-sm text-[#9890ad] mt-1 truncate max-w-sm">
+                {currentTrack ? currentTrack.artist : "Bir parça seçin"}
+              </p>
             </div>
 
-            {/* Sağ: Canlı Senkronize Şarkı Sözleri */}
             <div
               ref={fullscreenLyricsRef}
-              className="lg:col-span-7 h-full max-h-[58vh] overflow-y-auto px-4 md:px-8 py-10 space-y-6 rounded-3xl bg-[#110824]/55 border border-purple-400/20 backdrop-blur-xl"
+              className="lg:col-span-7 max-h-[55vh] overflow-y-auto no-scrollbar space-y-5 pr-3"
             >
               {!currentTrack ? (
-                <div className="py-20 text-center text-purple-300/50">
-                  <MicVocal size={40} className="mx-auto mb-3 opacity-50" />
-                  <p className="text-base font-semibold">
-                    Bir şarkı başlattığında canlı sözler burada akar
-                  </p>
-                </div>
+                <p className="text-base text-[#5e5773]">Şarkı seçilmedi</p>
               ) : lyricsData.loading ? (
-                <div className="py-20 flex items-center justify-center">
-                  <Loader2 size={32} className="animate-spin text-purple-400" />
-                </div>
+                <Loader2 size={28} className="animate-spin text-[#a78bfa]" />
               ) : lyricsData.synced.length > 0 ? (
                 lyricsData.synced.map((line, i) => {
                   const isActive = i === activeLyricIndex;
-                  const isPassed = i < activeLyricIndex;
                   return (
                     <p
                       key={`fs_${line.time}_${i}`}
                       data-lyric-idx={i}
                       onClick={() => seekToSeconds(line.time)}
-                      className={`cursor-pointer leading-snug tracking-tight transition-colors duration-300 ${
+                      className={`cursor-pointer text-2xl sm:text-3xl font-bold leading-snug transition-colors duration-200 ${
                         isActive
-                          ? "text-white text-2xl sm:text-4xl font-black drop-shadow-[0_0_20px_rgba(217,70,239,0.75)]"
-                          : isPassed
-                          ? "text-purple-400/30 hover:text-purple-200 text-xl sm:text-2xl font-bold"
-                          : "text-purple-200/50 hover:text-purple-100 text-xl sm:text-2xl font-bold"
+                          ? "text-white"
+                          : "text-white/25 hover:text-white/60"
                       }`}
                     >
                       {line.text}
@@ -3749,23 +3219,20 @@ export default function HeliosApp() {
                   );
                 })
               ) : lyricsData.plain ? (
-                <div className="whitespace-pre-line text-lg sm:text-2xl leading-relaxed font-bold text-purple-100">
+                <div className="whitespace-pre-line text-xl leading-relaxed font-semibold text-white/80">
                   {lyricsData.plain}
                 </div>
               ) : (
-                <div className="py-20 text-center text-purple-300/60">
-                  <p className="text-base font-semibold">
-                    {lyricsData.error || "Bu parça için senkronize söz bulunamadı"}
-                  </p>
-                </div>
+                <p className="text-base text-[#5e5773]">
+                  {lyricsData.error || "Söz bulunamadı"}
+                </p>
               )}
             </div>
           </div>
 
-          {/* Alt Bar: Tam Ekran Oynatma Kontrolleri & Seekbar */}
-          <div className="relative z-10 max-w-4xl w-full mx-auto bg-[#130a29]/85 border border-purple-400/25 rounded-3xl px-6 py-4 backdrop-blur-2xl shadow-[0_12px_50px_rgba(0,0,0,0.7)] space-y-3">
+          <div className="relative z-10 max-w-2xl w-full mx-auto space-y-3">
             <div className="flex items-center gap-3">
-              <span className="text-xs font-semibold text-purple-200/80 tabular-nums w-10 text-right">
+              <span className="text-xs text-[#9890ad] tabular-nums w-9 text-right">
                 {formatTime(displayedTime)}
               </span>
               <input
@@ -3779,118 +3246,34 @@ export default function HeliosApp() {
                 style={{ "--progress": `${seekPercent}%` }}
                 className="helios-slider flex-1"
               />
-              <span className="text-xs font-semibold text-purple-200/80 tabular-nums w-10">
+              <span className="text-xs text-[#9890ad] tabular-nums w-9">
                 {formatTime(effectiveDuration)}
               </span>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {currentTrack && (
-                  <>
-                    <button
-                      onClick={(e) => toggleLikeTrack(currentTrack, e)}
-                      className={`p-2 rounded-xl border transition-all ${
-                        isTrackLiked(currentTrack.id)
-                          ? "bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-400/40"
-                          : "bg-white/[0.04] text-purple-200 border-white/10"
-                      }`}
-                    >
-                      <Heart
-                        size={17}
-                        className={
-                          isTrackLiked(currentTrack.id) ? "fill-current" : ""
-                        }
-                      />
-                    </button>
-                    <button
-                      onClick={(e) =>
-                        openSimilarRecommendations(currentTrack, e)
-                      }
-                      className="px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/35 text-purple-200 border border-purple-400/35 text-xs font-bold flex items-center gap-1.5"
-                    >
-                      <Sparkles size={13} />
-                      <span>AI Benzerleri</span>
-                    </button>
-                  </>
+            <div className="flex items-center justify-center gap-6">
+              <button
+                onClick={handlePrev}
+                className="p-2 text-[#d4cfe3] hover:text-white transition-colors"
+              >
+                <SkipBack size={22} className="fill-current" />
+              </button>
+              <button
+                onClick={togglePlayPause}
+                className="w-12 h-12 rounded-full bg-[#f6f4fb] hover:bg-[#e9d5ff] text-[#09070f] flex items-center justify-center transition-transform hover:scale-105"
+              >
+                {isPlaying ? (
+                  <Pause size={20} className="fill-current" />
+                ) : (
+                  <Play size={20} className="fill-current ml-0.5" />
                 )}
-              </div>
-
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setShuffle((s) => !s)}
-                  className={`p-2 rounded-lg ${
-                    shuffle ? "text-purple-300" : "text-purple-300/50 hover:text-white"
-                  }`}
-                >
-                  <Shuffle size={18} />
-                </button>
-                <button
-                  onClick={handlePrev}
-                  className="p-2 text-white hover:text-purple-300 transition-colors"
-                >
-                  <SkipBack size={24} className="fill-current" />
-                </button>
-                <button
-                  onClick={togglePlayPause}
-                  className="w-14 h-14 rounded-2xl bg-gradient-to-br from-white via-purple-200 to-fuchsia-400 text-[#120726] flex items-center justify-center shadow-[0_0_35px_rgba(192,132,252,0.85)] hover:scale-105 transition-all"
-                >
-                  {isPlaying ? (
-                    <Pause size={26} className="fill-current" />
-                  ) : (
-                    <Play size={26} className="fill-current ml-1" />
-                  )}
-                </button>
-                <button
-                  onClick={() => handleNext(true)}
-                  className="p-2 text-white hover:text-purple-300 transition-colors"
-                >
-                  <SkipForward size={24} className="fill-current" />
-                </button>
-                <button
-                  onClick={() => {
-                    const next =
-                      repeatMode === "off"
-                        ? "all"
-                        : repeatMode === "all"
-                        ? "one"
-                        : "off";
-                    setRepeatMode(next);
-                  }}
-                  className={`p-2 rounded-lg ${
-                    repeatMode !== "off"
-                      ? "text-purple-300"
-                      : "text-purple-300/50 hover:text-white"
-                  }`}
-                >
-                  {repeatMode === "one" ? (
-                    <Repeat1 size={18} />
-                  ) : (
-                    <Repeat size={18} />
-                  )}
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2 w-44 justify-end">
-                <Volume2 size={16} className="text-purple-300/80" />
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={isMuted ? 0 : volume}
-                  onChange={(e) => {
-                    const v = parseFloat(e.target.value);
-                    volumeRef.current = v;
-                    mutedRef.current = false;
-                    applyAudioSettings();
-                    setVolume(v);
-                    setIsMuted(false);
-                  }}
-                  style={{ "--progress": `${(isMuted ? 0 : volume) * 100}%` }}
-                  className="helios-slider w-24"
-                />
-              </div>
+              </button>
+              <button
+                onClick={() => handleNext(true)}
+                className="p-2 text-[#d4cfe3] hover:text-white transition-colors"
+              >
+                <SkipForward size={22} className="fill-current" />
+              </button>
             </div>
           </div>
         </div>
@@ -3904,11 +3287,11 @@ export default function HeliosApp() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-2xl bg-zinc-900 border border-white/15 p-6 shadow-2xl space-y-4"
+            className="w-full max-w-md rounded-2xl bg-[#110d1b] border border-white/15 p-6 shadow-2xl space-y-4"
           >
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-extrabold text-white flex items-center gap-2">
-                <FolderPlus size={20} className="text-[#F06B3C]" />
+                <FolderPlus size={20} className="text-[#a78bfa]" />
                 <span>Yeni Çalma Listesi</span>
               </h3>
               <button
@@ -3945,7 +3328,7 @@ export default function HeliosApp() {
                 value={newPlaylistName}
                 onChange={(e) => setNewPlaylistName(e.target.value)}
                 placeholder="Örn: Gece Sürüşü, Spor, Kodlama..."
-                className="w-full px-4 py-3 rounded-xl bg-black/50 border border-white/15 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#F06B3C]"
+                className="w-full px-4 py-3 rounded-xl bg-black/50 border border-white/15 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#a78bfa]"
               />
               <div className="flex justify-end gap-2">
                 <button
@@ -3957,7 +3340,7 @@ export default function HeliosApp() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-[#F06B3C] hover:bg-[#FF8256] text-white shadow-lg shadow-orange-500/25"
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-[#a78bfa] hover:bg-[#c4b5fd] text-white shadow-lg shadow-orange-500/25"
                 >
                   Oluştur
                 </button>
@@ -3975,11 +3358,11 @@ export default function HeliosApp() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-2xl bg-zinc-900 border border-white/15 p-6 shadow-2xl space-y-4"
+            className="w-full max-w-md rounded-2xl bg-[#110d1b] border border-white/15 p-6 shadow-2xl space-y-4"
           >
             <div className="flex items-center justify-between">
               <h3 className="text-base font-extrabold text-white flex items-center gap-2">
-                <ListPlus size={19} className="text-[#F06B3C]" />
+                <ListPlus size={19} className="text-[#a78bfa]" />
                 <span>Çalma Listesine Ekle</span>
               </h3>
               <button
@@ -4034,7 +3417,7 @@ export default function HeliosApp() {
                           <Check size={14} /> Eklendi
                         </span>
                       ) : (
-                        <Plus size={16} className="text-[#F06B3C]" />
+                        <Plus size={16} className="text-[#a78bfa]" />
                       )}
                     </button>
                   );
@@ -4048,7 +3431,7 @@ export default function HeliosApp() {
                 setNewPlaylistName("");
                 setIsCreateModalOpen(true);
               }}
-              className="w-full py-2.5 rounded-xl bg-[#F06B3C] hover:bg-[#FF8256] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
+              className="w-full py-2.5 rounded-xl bg-[#a78bfa] hover:bg-[#c4b5fd] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
             >
               <Plus size={15} />
               <span>Yeni Liste Oluştur ve Ekle</span>
@@ -4065,7 +3448,7 @@ export default function HeliosApp() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-2xl bg-zinc-900 border border-[#1DB954]/30 p-6 shadow-2xl space-y-4"
+            className="w-full max-w-md rounded-2xl bg-[#110d1b] border border-[#1DB954]/30 p-6 shadow-2xl space-y-4"
           >
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-extrabold text-white flex items-center gap-2">
@@ -4137,10 +3520,10 @@ export default function HeliosApp() {
           className={`fixed bottom-28 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-full text-xs font-bold shadow-2xl flex items-center gap-2 border ${
             toastMessage.isError
               ? "bg-rose-600 text-white border-rose-400"
-              : "bg-zinc-900/95 text-white border-white/15 backdrop-blur-xl"
+              : "bg-[#110d1b]/95 text-white border-white/15 backdrop-blur-xl"
           }`}
         >
-          <Sparkles size={14} className="text-[#F06B3C]" />
+          <Sparkles size={14} className="text-[#a78bfa]" />
           <span>{toastMessage.text}</span>
         </div>
       )}

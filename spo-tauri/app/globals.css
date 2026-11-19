@@ -9,7 +9,7 @@
 * {
   box-sizing: border-box;
   scrollbar-width: thin;
-  scrollbar-color: rgba(168, 85, 247, 0.28) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
 
 ::-webkit-scrollbar {
@@ -20,19 +20,19 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(168, 85, 247, 0.25);
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(192, 132, 252, 0.55);
+  background: rgba(167, 139, 250, 0.35);
 }
 
 html,
 body {
   height: 100%;
   overflow: hidden;
-  background-color: #090514;
-  color: #f5f3ff;
+  background-color: #09070f;
+  color: #f6f4fb;
   user-select: none;
   -webkit-font-smoothing: antialiased;
 }
@@ -63,22 +63,7 @@ body {
   animation-delay: 0.15s;
 }
 
-@keyframes cosmic-pulse {
-  0%, 100% {
-    opacity: 0.55;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.85;
-    transform: scale(1.04);
-  }
-}
-
-.cosmic-glow {
-  animation: cosmic-pulse 6s ease-in-out infinite;
-}
-
-/* Custom Range Input (Synthesia Glowing Purple/Violet Seekbar & Volume) */
+/* Sade, Modern, İnce Seekbar & Ses Kaydırıcısı */
 input[type="range"].helios-slider {
   -webkit-appearance: none;
   appearance: none;
@@ -87,39 +72,39 @@ input[type="range"].helios-slider {
 }
 
 input[type="range"].helios-slider::-webkit-slider-runnable-track {
-  height: 4px;
+  height: 3px;
   border-radius: 9999px;
   background: linear-gradient(
     to right,
-    #a855f7 0%,
-    #e879f9 var(--progress, 0%),
-    rgba(255, 255, 255, 0.14) var(--progress, 0%)
+    #a78bfa 0%,
+    #a78bfa var(--progress, 0%),
+    rgba(255, 255, 255, 0.12) var(--progress, 0%)
   );
   transition: height 0.15s ease;
 }
 
 input[type="range"].helios-slider:hover::-webkit-slider-runnable-track {
-  height: 5px;
+  height: 4px;
 }
 
 input[type="range"].helios-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  height: 12px;
-  width: 12px;
+  height: 11px;
+  width: 11px;
   border-radius: 9999px;
-  background: #f5f3ff;
-  border: 2px solid #c084fc;
-  box-shadow: 0 0 12px rgba(168, 85, 247, 0.95), 0 0 4px #ffffff;
+  background: #ffffff;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.55);
   margin-top: -4px;
-  opacity: 1;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
 input[type="range"].helios-slider:hover::-webkit-slider-thumb,
 input[type="range"].helios-slider:active::-webkit-slider-thumb {
-  transform: scale(1.2);
-  box-shadow: 0 0 16px rgba(192, 132, 252, 1), 0 0 6px #ffffff;
+  opacity: 1;
+  transform: scale(1);
 }
 
 /* Next.js dev indicator gizle */
@@ -127,4 +112,12 @@ nextjs-portal,
 [data-nextjs-toast],
 [data-nextjs-dialog-overlay] {
   display: none !important;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
