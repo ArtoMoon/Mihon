@@ -421,28 +421,6 @@ async fn scrape_user_playlist_ids(user_id: &str) -> Result<Vec<String>, String> 
         }
     }
 
-    // Bilinen kullanıcı profili önbelleği ile birleştir / yedekle
-    if user_id.eq_ignore_ascii_case("plcdgnxjp7rv57rnc7g5ai4jl") {
-        const KNOWN_IDS: &[&str] = &[
-            "6OK5SRngZiRV7LnyFyQqrN",
-            "1PyHLNDWAsZ043pSQMbxvI",
-            "3gi9yhnHMUrKH8UdLHdh5G",
-            "5T0eYmKyUg77ZH0IIUP8vN",
-            "0w8BI35eb1g1a67HCmlpI7",
-            "27JLMBl8uOHzmngCweqdoK",
-            "09QlAx107vyZPcyrZ4Zu7c",
-            "2KwabmqhNmG1wTn7VWRq2l",
-            "11nvmI52m3sQiYXYYeSTyw",
-            "5HVN2UY94wE4NC29AgD5IB",
-        ];
-        for kid in KNOWN_IDS {
-            let s = (*kid).to_string();
-            if !ids.contains(&s) {
-                ids.push(s);
-            }
-        }
-    }
-
     if ids.is_empty() {
         return Err(
             "Bu Spotify profilinde herkese açık çalma listesi bulunamadı veya profil gizli.".into(),

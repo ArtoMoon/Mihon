@@ -399,6 +399,7 @@ export default function HeliosApp() {
   const volumeRef = useRef(0.75);
   const mutedRef = useRef(false);
   const loadTokenRef = useRef(0);
+  const consecutiveFailRef = useRef(0);
   const autoExtendLockRef = useRef(false);
   const isRadioModeRef = useRef(false);
   const [queue, setQueue] = useState([]);
@@ -890,6 +891,7 @@ export default function HeliosApp() {
         audio.playbackRate = playbackRate;
         applyAudioSettings();
         await audio.play();
+        consecutiveFailRef.current = 0;
         setIsPlaying(true);
         refreshCacheInfo();
 
@@ -900,11 +902,15 @@ export default function HeliosApp() {
         }
       } catch (err) {
         if (token !== loadTokenRef.current) return;
-        showToast("Parça atlanıyor, sıradaki benzer şarkıya geçiliyor...", true);
-        if (index + 1 < targetQueue.length) {
-          setTimeout(() => playTrackAtIndex(targetQueue, index + 1), 350);
+        consecutiveFailRef.current += 1;
+        const msg = String(err?.message || err || "Parça yüklenemedi");
+        if (consecutiveFailRef.current <= 2 && index + 1 < targetQueue.length) {
+          showToast(`Parça atlandı (${msg.slice(0, 60)})`, true);
+          setTimeout(() => playTrackAtIndex(targetQueue, index + 1), 450);
         } else {
+          consecutiveFailRef.current = 0;
           setIsPlaying(false);
+          showToast(`Oynatma hatası: ${msg.slice(0, 90)}`, true);
         }
       } finally {
         if (token === loadTokenRef.current) {

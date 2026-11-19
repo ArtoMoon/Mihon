@@ -56,8 +56,77 @@ async fn works(program: &str, pre: &[String]) -> bool {
         .unwrap_or(false)
 }
 
-/// Sırasıyla dener: SPO_YTDLP ortam değişkeni → PATH'teki yt-dlp → `python -m yt_dlp`
-async fn launcher() -> Result<&'static Launcher, String> {
+fn ytdlp_download_lock() -> &'static tokio::sync::Mutex<()> {
+    static LOCK: OnceLock<tokio::sync::Mutex<()>> = OnceLock::new();
+    LOCK.get_or_init(|| tokio::sync::Mutex::new(()))
+}
+
+async fn ensure_managed_ytdlp(cache_dir: &Path) -> Result<PathBuf, String> {
+    let bin_dir = cache_dir
+        .parent()
+        .unwrap_or(cache_dir)
+        .join("bin");
+    let exe_name = if cfg!(windows) { "yt-dlp.exe" } else { "yt-dlp" };
+    let target = bin_dir.join(exe_name);
+
+    if target.exists() && std::fs::metadata(&target).map(|m| m.len() > 2_000_000).unwrap_or(false) {
+        return Ok(target);
+    }
+
+    let _guard = ytdlp_download_lock().lock().await;
+    if target.exists() && std::fs::metadata(&target).map(|m| m.len() > 2_000_000).unwrap_or(false) {
+        return Ok(target);
+    }
+
+    tokio::fs::create_dir_all(&bin_dir)
+        .await
+        .map_err(|e| format!("bin klasörü oluşturulamadı: {e}"))?;
+
+    let url = if cfg!(windows) {
+        "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe"
+    } else {
+        "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp"
+    };
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(90))
+        .user_agent("Mihon-Player/2.1.0")
+        .build()
+        .map_err(|e| format!("HTTP istemci hatası: {e}"))?;
+
+    let resp = client
+        .get(url)
+        .send()
+        .await
+        .map_err(|e| format!("Ses motoru (yt-dlp) indirilemedi: {e}"))?;
+
+    if !resp.status().is_success() {
+        return Err(format!("Ses motoru indirme hatası: HTTP {}", resp.status()));
+    }
+
+    let bytes = resp
+        .bytes()
+        .await
+        .map_err(|e| format!("Ses motoru okunamadı: {e}"))?;
+
+    if bytes.len() < 2_000_000 {
+        return Err("İndirilen ses motoru dosyası eksik".into());
+    }
+
+    let tmp = bin_dir.join(format!("{exe_name}.tmp"));
+    tokio::fs::write(&tmp, &bytes)
+        .await
+        .map_err(|e| format!("Ses motoru yazılamadı: {e}"))?;
+
+    tokio::fs::rename(&tmp, &target)
+        .await
+        .map_err(|e| format!("Ses motoru taşınamadı: {e}"))?;
+
+    Ok(target)
+}
+
+/// Sırasıyla dener: SPO_YTDLP → yönetilen bin/yt-dlp.exe → PATH'teki yt-dlp → `python -m yt_dlp` → otomatik indirir
+async fn launcher(cache_dir: &Path) -> Result<&'static Launcher, String> {
     static LAUNCHER: OnceLock<Launcher> = OnceLock::new();
     if let Some(l) = LAUNCHER.get() {
         return Ok(l);
@@ -66,6 +135,14 @@ async fn launcher() -> Result<&'static Launcher, String> {
     let mut candidates: Vec<Launcher> = Vec::new();
     if let Ok(custom) = std::env::var("SPO_YTDLP") {
         candidates.push((custom, vec![]));
+    }
+    let managed_path = cache_dir
+        .parent()
+        .unwrap_or(cache_dir)
+        .join("bin")
+        .join(if cfg!(windows) { "yt-dlp.exe" } else { "yt-dlp" });
+    if managed_path.exists() {
+        candidates.push((managed_path.to_string_lossy().into_owned(), vec![]));
     }
     candidates.push(("yt-dlp".into(), vec![]));
     candidates.push(("python".into(), vec!["-m".into(), "yt_dlp".into()]));
@@ -76,7 +153,19 @@ async fn launcher() -> Result<&'static Launcher, String> {
             return Ok(LAUNCHER.get_or_init(|| (prog, pre)));
         }
     }
-    Err("yt-dlp bulunamadı. Kurulum: pip install yt-dlp".into())
+
+    // Hiçbir bilgisayarda Python/yt-dlp kurulu olmasa bile otomatik olarak resmi yt-dlp.exe indir!
+    let downloaded = ensure_managed_ytdlp(cache_dir).await?;
+    let prog = downloaded.to_string_lossy().into_owned();
+    if works(&prog, &[]).await {
+        return Ok(LAUNCHER.get_or_init(|| (prog, vec![])));
+    }
+    Err("Ses motoru (yt-dlp) başlatılamadı".into())
+}
+
+/// Uygulama açıldığında arka planda ses motorunu (yt-dlp) hazırlar.
+pub async fn warmup_launcher(cache_dir: &Path) {
+    let _ = launcher(cache_dir).await;
 }
 
 fn find_cached(dir: &Path, id: &str) -> Option<PathBuf> {
@@ -355,7 +444,7 @@ async fn download_audio_inner(cache_dir: &Path, id: &str) -> Result<PathBuf, Str
         .await
         .map_err(|e| format!("Geçici indirme klasörü oluşturulamadı: {e}"))?;
 
-    let (prog, pre) = launcher().await?;
+    let (prog, pre) = launcher(cache_dir).await?;
     let nonce = DOWNLOAD_NONCE.fetch_add(1, Ordering::Relaxed);
     let stem = format!("{id}_{nonce}");
     let out_tmpl = tmp_dir.join(format!("{stem}.%(ext)s"));
@@ -366,6 +455,8 @@ async fn download_audio_inner(cache_dir: &Path, id: &str) -> Result<PathBuf, Str
     let output = command(prog)
         .args(pre)
         .args([
+            "--extractor-args",
+            "youtube:player_client=android,ios,web",
             "-f",
             "600/249/139/599/250/ba[abr<=70]/ba/b",
             "-S",
@@ -409,6 +500,8 @@ async fn download_audio_inner(cache_dir: &Path, id: &str) -> Result<PathBuf, Str
     let fallback = command(prog)
         .args(pre)
         .args([
+            "--extractor-args",
+            "youtube:player_client=android,ios,web",
             "-f",
             "ba/worst",
             "-S",

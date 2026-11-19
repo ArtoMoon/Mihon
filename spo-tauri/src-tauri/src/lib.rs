@@ -404,11 +404,12 @@ fn load_library(app: AppHandle) -> Result<serde_json::Value, String> {
             }
         }
     }
-    let recovered = recover_from_webview_leveldb(&app);
-    if let Ok(serialized) = serde_json::to_string(&recovered) {
-        let _ = std::fs::write(&path, serialized);
-    }
-    Ok(recovered)
+    Ok(serde_json::json!({
+        "custom_playlists": [],
+        "liked": [],
+        "recent": [],
+        "playback_state": null
+    }))
 }
 
 #[tauri::command]
@@ -1294,6 +1295,12 @@ pub fn run() {
             eprintln!("[Mihon] Setup started");
             #[cfg(target_os = "windows")]
             start_windows_media_key_poller(app.handle().clone());
+
+            if let Ok(cache_dir) = audio_cache_dir(&app.handle()) {
+                tauri::async_runtime::spawn(async move {
+                    audio::warmup_launcher(&cache_dir).await;
+                });
+            }
 
             if let Ok(exe) = std::env::current_exe() {
                 if let Some(dir) = exe.parent() {
